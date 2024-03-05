@@ -1,25 +1,23 @@
 use arguments::Commands;
 use std::env;
-use settings::Settings;
 use clap::{Command, Arg};
 
 mod settings;
 mod arguments;
+mod utils;
 
 #[macro_use]
 extern crate lazy_static;
 
 
-const CLI_VERSION: u8 = 1;
+pub const CLI_VERSION: &'static str = "1";
 
 lazy_static! {
-    static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    
+    pub static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    
 }
 
+
 fn main() {
-
-    let settings = Settings::new();
-
     let cmd = Command::new("lms")
         .bin_name("lms")
         .about("Lms cli interface")

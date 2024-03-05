@@ -1,10 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::env;
-use std::process::Command;
+use std::process::{Command, exit};
 use rand::{Rng, distributions::Alphanumeric};
-use reqwest;
 use gethostname::gethostname;
-use crate::Settings;
+use url::form_urlencoded;
+use webbrowser;
+use crate::{main, settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
 
@@ -35,7 +36,7 @@ impl Commands {
     }
 
     pub fn execute(&self) {
-        let settings = Settings::new();
+        let mut settings = Settings::new();
         match self {
             Commands::Open => open_logic(settings),
             Commands::Grade => grade_logic(settings),
@@ -60,19 +61,48 @@ fn grade_logic(settings: Settings) {
     todo!()
 }
 
-fn login_logic(settings: Settings) {
+fn login_logic(mut settings: Settings) {
     let token: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(AUTH_TOKEN_LENGHT.into())
         .map(char::from)
         .collect();
-    println!("{}", token);
 
-    println!("{:?}", gethostname());
+    settings.set("auth".to_string(), "token".to_string(), token.clone());
+    let encoded_host = form_urlencoded::byte_serialize(gethostname().as_encoded_bytes()).collect::<String>();
+    let url = format!("{}/api/authorize?host={}&token={}", crate::BASE_URL.to_string(), encoded_host, &token);
+    println!("Go to this URL to authorize lms: {}", url);
+    let _ = webbrowser::open(url.as_str());
 }
 
 fn upload_logic(settings: Settings) {
-    println!("{}", std::env::consts::OS);
+    let platform = std::env::consts::OS;
+
+    let cmd = if cfg!(platform = "macos") {
+        "gtar"
+    } else {
+        "tar"
+    };
+    
+    let mut tar = Command::new(cmd);
+    tar
+        .arg("czC")
+        .arg(get_work_location())
+        .arg("--exclude-backups")
+        .arg("--exclude-ignore=.gitignore")
+        .arg("--exclude-ignore=.lmsignore")
+        .arg(".");
+
+    let output = match tar.output() {
+        Ok(output) => output,
+        Err(_) => {
+            eprintln!("Command not found: {}", cmd);
+            if cfg!(platform = "macos") {
+                println!("Please install gnu-tar (using brew for instanse")
+            }
+            exit(1)
+        }
+    };
 }
 
 
@@ -100,5 +130,3 @@ fn get_work_location() -> PathBuf {
     lms_dir
     //reqwest
 }
-
-

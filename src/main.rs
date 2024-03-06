@@ -10,7 +10,7 @@ mod utils;
 extern crate lazy_static;
 
 
-pub const CLI_VERSION: &'static str = "1";
+pub const CLI_VERSION: &'static str = "14";
 
 lazy_static! {
     pub static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    
@@ -21,7 +21,7 @@ fn main() {
     let cmd = Command::new("lms")
         .bin_name("lms")
         .about("Lms cli interface")
-        .version("1")
+        .version(CLI_VERSION)
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(

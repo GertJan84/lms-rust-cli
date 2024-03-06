@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::env;
 use configparser::ini::Ini;
@@ -6,12 +5,9 @@ use configparser::ini::Ini;
 const FALLBACK: [&str; 4] = ["nvim .", "vscode .", "codium .", "nvim ."];
 
 pub struct Settings {
-    config: Ini,
+    pub config: Ini,
     config_path: PathBuf,
-    pub token: String,
     pub editors: Vec<String>,
-    pub setup: bool,
-    pub move_node_directories: bool
 }
 
 
@@ -28,28 +24,25 @@ impl Settings {
         let mut editors: Vec<String> = Vec::new();
 
         if Path::exists(&config_path) {
-            // {auth: {token: 1234}, setup: {enabled: true}, custom: {editor: nvim}}
-            let map = config.load(&config_path);
-            let token = "";
-            let setup = "";
-            let custom_editor = "";
+            let map = config.load(&config_path).unwrap();
 
-            editors.push(custom_editor.to_string());
-
-        } 
+            if let Some(custom) = map.get("custom") {
+                if let Some(editor_value) = custom.get("editor") {
+                    editors.push(editor_value.clone().unwrap())
+                }
+            }
+        }
 
         let editors = editors
             .iter()
             .map(|s| s.to_string())
             .chain(FALLBACK.iter().map(|&s| s.to_string()))
             .collect::<Vec<String>>();
+
         Self {
             config,
             config_path,
-            token: "".to_string(),
             editors,
-            setup: true,
-            move_node_directories: true
         }
     }
 

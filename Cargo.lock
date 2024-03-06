@@ -556,6 +556,7 @@ dependencies = [
  "lazy_static",
  "rand",
  "reqwest",
+ "serde_json",
  "url",
  "webbrowser",
 ]

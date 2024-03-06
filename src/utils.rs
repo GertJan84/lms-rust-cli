@@ -1,4 +1,6 @@
 use crate::main;
+use std::collections::HashMap;
+use std::process::exit;
 use reqwest::{
     blocking::Client,
     StatusCode
@@ -6,7 +8,7 @@ use reqwest::{
 
 
 
-pub fn request(path: String, token: String, data: String) -> () {
+pub fn request(path: String, token: String, data: String) -> Option<HashMap<String, serde_json::Value>>  {
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, crate::CLI_VERSION)
     } else {
@@ -24,18 +26,34 @@ pub fn request(path: String, token: String, data: String) -> () {
         Ok(res) => {
             match res.status() {
                 StatusCode::OK => {
+                    match res.json::<HashMap<String, serde_json::Value>>() {
+                        Ok(data) => Some(data),
+                        Err(_) => {
+                            return None
+                        }
+                   }
+                }
 
+                StatusCode::UNAUTHORIZED => {
+                    eprintln!("You are not logged in");
+                    exit(1)
                 }
 
                 StatusCode::IM_A_TEAPOT => {
                     // TODO: Update client
-                    todo!();
+                    todo!("Client is outdated: utils teapot");
                 }
-                _ => eprintln!("Server status not handled: {:?}", res.status()) 
+                _ => {
+                    eprintln!("Server status not handled: {:?}", res.status());
+                    exit(1);
+                }
 
             }
 
         }
-        Err(err) => println!("request error: {:?}", err)    
+        Err(err) => {
+            println!("request error: {:?}", err);
+            return None
+        }
     }
 }

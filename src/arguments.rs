@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
 use std::env;
+use std::fs;
 use std::process::{Command, exit};
 use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
 use url::form_urlencoded;
 use webbrowser;
-use crate::{main, settings::Settings, utils};
+use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
 
@@ -17,7 +18,6 @@ pub enum Commands {
     Template,
     Login
 }
-
 
 impl Commands {
     pub fn get_command(command: String) -> Self {
@@ -36,7 +36,7 @@ impl Commands {
     }
 
     pub fn execute(&self) {
-        let mut settings = Settings::new();
+        let settings = Settings::new();
         match self {
             Commands::Open => open_logic(settings),
             Commands::Grade => grade_logic(settings),
@@ -49,7 +49,7 @@ impl Commands {
 }
 
 fn open_logic(settings: Settings) -> () {
-    let out_dir = get_work_location();
+    let out_dir = get_work_location(settings.config.get("auth", "token").unwrap_or("".to_string()));
     if let Err(err) = env::set_current_dir(out_dir) {
         eprintln!("{}", err)
     } else {
@@ -72,7 +72,7 @@ fn login_logic(mut settings: Settings) {
     let encoded_host = form_urlencoded::byte_serialize(gethostname().as_encoded_bytes()).collect::<String>();
     let url = format!("{}/api/authorize?host={}&token={}", crate::BASE_URL.to_string(), encoded_host, &token);
     println!("Go to this URL to authorize lms: {}", url);
-    let _ = webbrowser::open(url.as_str());
+    webbrowser::open(url.as_str());
 }
 
 fn upload_logic(settings: Settings) {
@@ -85,9 +85,8 @@ fn upload_logic(settings: Settings) {
     };
     
     let mut tar = Command::new(cmd);
-    tar
-        .arg("czC")
-        .arg(get_work_location())
+    tar.arg("czC")
+        .arg(get_work_location(settings.config.get("auth", "token").unwrap()))
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
@@ -114,8 +113,7 @@ fn template_logic(settings: Settings) {
     todo!()
 }
 
-fn get_work_location() -> PathBuf {
-
+fn get_work_location(token: String) -> PathBuf {
     let mut lms_dir = PathBuf::new();
     lms_dir.push(env::var("HOME").unwrap());
     lms_dir.push("lms");
@@ -123,10 +121,30 @@ fn get_work_location() -> PathBuf {
     let mut cache = lms_dir.clone();
     cache.push(".cache");
 
-    if Path::exists(&cache) {
-        todo!("read cache file")
-    } 
+    let online_attempt = utils::request("/api/attempts/current".to_string(), token, "".to_string());
 
-    lms_dir
-    //reqwest
+    if online_attempt.is_none() {
+        if Path::exists(&cache) {
+            let cache_location = match fs::read_to_string(&cache) {
+                Ok(cache_content) => cache_content.to_string(),
+                Err(_) => {
+                    eprintln!("No cached assignment");
+                    exit(1)
+                }
+            };
+
+            cache.push(cache_location);
+            return cache
+        } 
+
+        eprintln!("No cache file");
+        exit(1)
+    }
+
+    let assignment_path = &online_attempt.unwrap();
+    // TODO: unexcape value to string
+    let json_value = serde_json::to_string(&assignment_path.get("path").unwrap());
+    println!("{:?}", json_value);
+
+    return lms_dir;
 }

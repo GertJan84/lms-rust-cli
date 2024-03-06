@@ -11,11 +11,10 @@ The lms rust client
  - [ ] Download template
  - [ ] Reorder file structure
  - [ ] Grade work
- - [ ] Login
+ - [X] Login
  - [ ] Handle setup
  
 ### Extra features
  - [ ] Change default editor
- - [ ] Intergrated tests
  
 Avalible for `arm` and `x86` systems

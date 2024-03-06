@@ -12,6 +12,7 @@ The lms rust client
  - [ ] Reorder file structure
  - [ ] Grade work
  - [X] Login
+ - [X] Open work dir
  - [ ] Handle setup
  
 ### Extra features

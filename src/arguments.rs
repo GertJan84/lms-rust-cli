@@ -142,9 +142,8 @@ fn get_work_location(token: String) -> PathBuf {
     }
 
     let assignment_path = &online_attempt.unwrap();
-    // TODO: unexcape value to string
-    let json_value = serde_json::to_string(&assignment_path.get("path").unwrap());
-    println!("{:?}", json_value);
+    let json_value = &assignment_path.get("path").unwrap().as_str().unwrap();
+    lms_dir.push(json_value);
 
     return lms_dir;
 }

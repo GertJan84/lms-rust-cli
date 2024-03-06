@@ -72,6 +72,7 @@ fn main() {
     if let Some(subcommand) = cmd.subcommand_name() {
         let command = subcommand.to_string();
         let matches = Commands::get_command(command);
+//        println!("{:#?}", cmd.subcommand());
         Commands::execute(&matches)
     }
 

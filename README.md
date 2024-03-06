@@ -17,5 +17,7 @@ The lms rust client
  
 ### Extra features
  - [ ] Change default editor
+ - [X] Open work offline 
+ - [ ] Use tar rust module 
  
 Avalible for `arm` and `x86` systems

@@ -1,14 +1,14 @@
-use crate::main;
-use std::collections::HashMap;
-use std::process::exit;
+use serde_json::Value;
+use std::path::PathBuf;
+use std::process::{Command, Stdio, exit};
 use reqwest::{
-    blocking::Client,
+    blocking::{Response, Client},
     StatusCode
 };
 
 
 
-pub fn request(path: String, token: String, data: String) -> Option<HashMap<String, serde_json::Value>>  {
+pub fn request(path: String, token: &String, data: String) -> Option<Response>  {
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, crate::CLI_VERSION)
     } else {
@@ -26,18 +26,19 @@ pub fn request(path: String, token: String, data: String) -> Option<HashMap<Stri
         Ok(res) => {
             match res.status() {
                 StatusCode::OK => {
-                    match res.json::<HashMap<String, serde_json::Value>>() {
-                        Ok(data) => Some(data),
-                        Err(_) => {
-                            return None
-                        }
-                   }
+                    Some(res)
                 }
 
                 StatusCode::UNAUTHORIZED => {
                     eprintln!("You are not logged in");
                     exit(1)
                 }
+
+                StatusCode::FORBIDDEN => {
+                    eprintln!("You dont have the right to access this");
+                    exit(1)
+                }
+
 
                 StatusCode::IM_A_TEAPOT => {
                     // TODO: Update client
@@ -52,8 +53,39 @@ pub fn request(path: String, token: String, data: String) -> Option<HashMap<Stri
 
         }
         Err(err) => {
-            println!("request error: {:?}", err);
             return None
         }
     }
+}
+
+pub fn response_to_json(res: Response) -> Value {
+    let text = res.text().unwrap();
+    match serde_json::from_str(&text) {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("JSON parsing error: \n{}", err);
+            exit(1)
+        }
+    }
+}
+
+pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
+    let res = request(path, token, "".to_string());
+
+    match res {
+        Some(res) => {
+            println!("{:?}", res.text());
+        }
+        None => exit(1)
+    }
+
+    //let mut tar_process = Command::new("tar")
+    //    .arg("xzC")
+    //    .arg(out_dir)
+    //    .stdin(Stdio::piped())
+    //    .spawn()
+    //    .expect("Faild to start tar process");
+
+    //let stdin = tar_process.stdin.take().ok_or("Faild to open tar stdin");
+
 }

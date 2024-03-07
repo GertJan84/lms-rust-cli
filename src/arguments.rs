@@ -53,7 +53,7 @@ fn open_logic(settings: Settings) -> () {
     match env::set_current_dir(out_dir) {
         Ok(_) =>{
             settings.editors.iter().for_each(|editor| {
-                if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Cant find wich").success() {
+                if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Can't find which").success() {
                     Command::new(format!("{}", editor))
                         .arg(".")
                         .status()
@@ -67,7 +67,7 @@ fn open_logic(settings: Settings) -> () {
 }
 
 fn grade_logic(settings: Settings) {
-    todo!()
+    todo!("Implelent grade logic")
 }
 
 fn login_logic(mut settings: Settings) {
@@ -101,6 +101,7 @@ fn upload_logic(settings: Settings) {
         .arg("--exclude-ignore=.lmsignore")
         .arg(".");
 
+    // TODO: Look over this again (output instand of status)?
     match tar.output() {
         Ok(output) => output,
         Err(_) => {
@@ -111,6 +112,8 @@ fn upload_logic(settings: Settings) {
             exit(1)
         }
     };
+
+    todo!("Send data to server")
 }
 
 
@@ -141,7 +144,7 @@ fn download_logic(settings: Settings) {
 }
 
 fn template_logic(settings: Settings) {
-    todo!()
+    todo!("Implement template logic")
 }
 
 fn get_work_location(token: String) -> PathBuf {

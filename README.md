@@ -16,7 +16,7 @@ The lms rust client
  - [ ] Handle setup
  
 ### Extra features
- - [ ] Change default editor
+ - [X] Change default editor
  - [X] Open work offline 
  - [ ] Use tar rust module 
  

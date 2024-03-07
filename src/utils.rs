@@ -52,7 +52,7 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
             }
 
         }
-        Err(err) => {
+        Err(_) => {
             return None
         }
     }

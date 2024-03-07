@@ -1,5 +1,6 @@
 use serde_json::Value;
 use std::path::PathBuf;
+use std::io::Write;
 use std::process::{Command, Stdio, exit};
 use reqwest::{
     blocking::{Response, Client},
@@ -53,6 +54,7 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
 
         }
         Err(_) => {
+            // Request faild because the client is offline
             return None
         }
     }
@@ -72,20 +74,37 @@ pub fn response_to_json(res: Response) -> Value {
 pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
     let res = request(path, token, "".to_string());
 
-    match res {
-        Some(res) => {
-            println!("{:?}", res.text());
+    let mut tar_process = Command::new("tar")
+        .arg("xzC")
+        .arg(out_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .spawn()
+        .expect("Faild to start tar process");
+
+    match tar_process.stdin.take() {
+        Some(mut stdin) => {
+
+            match res {
+                Some(mut unwrap_res) => {
+                    let mut res_body = vec![];
+                    let _ = unwrap_res.copy_to(&mut res_body);
+                    println!("{:?}", stdin);
+                    let _ = stdin.write(&res_body);
+
+                    // Write all to res_body to stdin and drop stdin
+                    drop(stdin);
+                }
+                None => {
+                    eprintln!("Got no response form server");
+                    exit(1)
+                }
+            }
+        },
+        None => {
+            eprintln!("Faild to get stdin ");
+            exit(1)
         }
-        None => exit(1)
     }
-
-    //let mut tar_process = Command::new("tar")
-    //    .arg("xzC")
-    //    .arg(out_dir)
-    //    .stdin(Stdio::piped())
-    //    .spawn()
-    //    .expect("Faild to start tar process");
-
-    //let stdin = tar_process.stdin.take().ok_or("Faild to open tar stdin");
 
 }

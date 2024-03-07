@@ -53,8 +53,9 @@ fn main() {
                 .about("Download your last-submitted work for the current assignment")
                 .arg(
                     Arg::new("Node id")
-                        .help("the node id optionall followed by a '~' and a attempt number")
+                        .help("The node id optionall followed by a '~' and a attempt number")
                         .num_args(1)
+                        .required(true)
                 )
             )
         .subcommand(

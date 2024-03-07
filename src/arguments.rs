@@ -121,19 +121,28 @@ fn download_logic(settings: Settings) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let response = utils::request("/api/attempts/@".to_string(), &token, "".to_string());
 
-    // TODO: Doesn't get current attempt
-    let attempt = match response {
+    let attempts = match response {
         Some(data) => utils::response_to_json(data),
-
         None => {
             eprintln!("no attempt found");
             exit(1)
         }
     };
 
-    // TODO: debug get value of function 
-    utils::download_tgz("/api/attempts/fasnjkl@vars:1/submission".to_string(), &token, PathBuf::new())
-    // let out_dir = get_work_location(token);
+    //match  {
+    //    Some(unwarp_attempt) => {
+    //        println!("{}", unwarp_attempt.get("spec"));
+    //    }, 
+    //    None => exit(1)
+    //}
+    //
+    let attempt = &attempts[0];
+    println!("{}", attempt);
+
+    let out_dir = get_work_location(token.clone());
+    fs::create_dir(&out_dir);
+    //let url = format!("/api/attempts/{}/submission", attempt[0].get("spec"));
+    //utils::download_tgz(url, &token, out_dir)
 
     // if Path::exists(&out_dir) {
     //     eprintln!("output directory {} already exists", out_dir.to_str().unwrap());

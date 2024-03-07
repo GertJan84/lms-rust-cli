@@ -12,7 +12,6 @@ configparser = "3.0.4"
 flate2 = "1.0.28"
 gethostname = "0.4.3"
 glob = "0.3.1"
-http = "1.1.0"
 lazy_static = "1.4.0"
 rand = "0.8.5"
 reqwest = { version = "0.11", features = ["blocking", "json"] }

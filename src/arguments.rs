@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::env;
 use std::fs;
-use std::process::{Command, exit};
+use std::process::{Command, exit, Stdio};
 use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
 use url::form_urlencoded;
@@ -30,7 +30,7 @@ impl Commands {
             "login" => Commands::Login,
             _ => {
                 eprintln!("Invalid command");
-                std::process::exit(1);
+                exit(1);
             }
         }
     }
@@ -50,11 +50,19 @@ impl Commands {
 
 fn open_logic(settings: Settings) -> () {
     let out_dir = get_work_location(settings.config.get("auth", "token").unwrap_or("".to_string()));
-    if let Err(err) = env::set_current_dir(out_dir) {
-        eprintln!("{}", err)
-    } else {
-        // TODO: Loop though settings editors to get the working editor
-       Command::new("nvim").arg(".").status().expect("Get a better editor");
+    match env::set_current_dir(out_dir) {
+        Ok(_) =>{
+            settings.editors.iter().for_each(|editor| {
+                if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Cant find wich").success() {
+                    Command::new(format!("{}", editor))
+                        .arg(".")
+                        .status()
+                        .expect("Failed to execute editor");
+                    exit(0)
+                }
+            })
+        },
+        Err(err) => eprintln!("{}", err)
     }
 }
 

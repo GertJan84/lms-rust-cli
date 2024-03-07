@@ -19,6 +19,23 @@ pub enum Commands {
     Login
 }
 
+struct Attempt {
+    path: PathBuf,
+    spec: String,
+    id: String
+}
+
+impl Attempt {
+    pub fn new(path: PathBuf, spec: String, id: String) -> Self {
+        Self {
+            path,
+            spec,
+            id
+        }
+    }
+}
+
+
 impl Commands {
     pub fn get_command(command: String) -> Self {
         match command.to_lowercase().as_str() {
@@ -35,13 +52,13 @@ impl Commands {
         }
     }
 
-    pub fn execute(&self) {
+    pub fn execute(&self, arg: String) {
         let settings = Settings::new();
         match self {
             Commands::Open => open_logic(settings),
             Commands::Grade => grade_logic(settings),
             Commands::Upload => upload_logic(settings),
-            Commands::Download => download_logic(settings),
+            Commands::Download => download_logic(settings, arg),
             Commands::Template => template_logic(settings),
             Commands::Login => login_logic(settings)
         }
@@ -49,7 +66,7 @@ impl Commands {
 }
 
 fn open_logic(settings: Settings) -> () {
-    let out_dir = get_work_location(settings.config.get("auth", "token").unwrap_or("".to_string()));
+    let out_dir = get_current_attempt(settings.config.get("auth", "token").unwrap_or("".to_string())).path;
     match env::set_current_dir(out_dir) {
         Ok(_) =>{
             settings.editors.iter().for_each(|editor| {
@@ -95,7 +112,7 @@ fn upload_logic(settings: Settings) {
     
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(get_work_location(settings.config.get("auth", "token").unwrap()))
+        .arg(get_current_attempt(settings.config.get("auth", "token").unwrap()).path)
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
@@ -117,9 +134,10 @@ fn upload_logic(settings: Settings) {
 }
 
 
-fn download_logic(settings: Settings) {
+fn download_logic(settings: Settings, arg: String) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let response = utils::request("/api/attempts/@".to_string(), &token, "".to_string());
+    let url_arg = format!("/api/attempts/@{}", arg.replace("~", ":"));
+    let response = utils::request(url_arg, &token, "".to_string());
 
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
@@ -129,43 +147,63 @@ fn download_logic(settings: Settings) {
         }
     };
 
-    //match  {
-    //    Some(unwarp_attempt) => {
-    //        println!("{}", unwarp_attempt.get("spec"));
-    //    }, 
-    //    None => exit(1)
-    //}
-    //
     let attempt = &attempts[0];
-    println!("{}", attempt);
 
-    let out_dir = get_work_location(token.clone());
-    fs::create_dir(&out_dir);
-    //let url = format!("/api/attempts/{}/submission", attempt[0].get("spec"));
-    //utils::download_tgz(url, &token, out_dir)
+    match attempt.as_object() {
+        Some(select_attempt) => {
+            let mut out_dir = get_lms_dir();
 
-    // if Path::exists(&out_dir) {
-    //     eprintln!("output directory {} already exists", out_dir.to_str().unwrap());
-    //     exit(1)
-    //}
+            match select_attempt.get("path") {
+                Some(att) => {
 
-    //fs::create_dir(out_dir);
+                    out_dir.push(att.as_str().unwrap());
+                    println!("{:?}", out_dir);
+
+                    if Path::exists(&out_dir) {
+                        eprintln!("output directory {} already exists", out_dir.to_str().unwrap());
+                        exit(1)
+                    }
+
+                    let select_attempts = select_attempt.get("spec").unwrap().clone();
+
+                    fs::create_dir_all(&out_dir);
+
+                    let url = format!("/api/attempts/{}/submission", select_attempts.as_str().unwrap());
+                    utils::download_tgz(url, &token, out_dir)
+                }
+                None => exit(1)
+            }
+
+        },
+
+        None => {
+            eprintln!("Cant find attempt");
+            exit(1)
+        }
+    }
 }
 
 fn template_logic(settings: Settings) {
-    todo!("Implement template logic")
+    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let current_attempt = get_current_attempt(token.clone());
+
+    download_template(token, current_attempt.id, current_attempt.path);
 }
 
-fn get_work_location(token: String) -> PathBuf {
+fn get_lms_dir() -> PathBuf {
     let mut lms_dir = PathBuf::new();
     lms_dir.push(env::var("HOME").unwrap());
     lms_dir.push("lms");
 
+    lms_dir
+}
+
+fn get_current_attempt(token: String) -> Attempt {
+    let mut lms_dir = get_lms_dir();
+
     let mut cache = lms_dir.clone();
     cache.push(".cache");
 
-
-    // TODO: Make let if
     let res = utils::request("/api/attempts/current".to_string(), &token, "".to_string());
 
     if res.is_none() {
@@ -177,9 +215,13 @@ fn get_work_location(token: String) -> PathBuf {
                     exit(1)
                 }
             };
-
-            lms_dir.push(cache_location);
-            return lms_dir
+            let mut content = cache_location.split_whitespace();
+            if let (Some(path), Some(spec), Some(id)) = (content.next(), content.next(), content.next()) {
+                return Attempt::new(path.into(), spec.to_string(), id.to_string())
+            } else {
+                fs::remove_file(&cache);
+            }
+            
         } 
 
         eprintln!("No cache file");
@@ -188,14 +230,36 @@ fn get_work_location(token: String) -> PathBuf {
 
     let online_attempt = utils::response_to_json(res.unwrap());
     let assignment_path = &online_attempt;
-    let json_value = &assignment_path.get("path").unwrap().as_str().unwrap();
 
-    match fs::write(&cache, json_value) {
+    let relative_path = &assignment_path.get("path").unwrap().as_str().unwrap();
+
+    let id = &assignment_path.get("attempt_id").unwrap().as_number().unwrap();
+    let spec = &assignment_path.get("spec").unwrap().as_str().unwrap();
+
+    lms_dir.push(relative_path);
+    let cache_value = format!("{} {} {}", &lms_dir.to_str().unwrap(), spec, &id);
+
+
+    match fs::write(&cache, cache_value) {
         Ok(_) => {},
         Err(err) => eprintln!("Can't write to cache because: {}", err)
     }
 
-    lms_dir.push(json_value);
+    return Attempt::new(lms_dir, spec.to_string(), id.to_string())
 
-    return lms_dir;
+}
+
+fn download_template(token: String, attempt_id: String, out_dir: PathBuf) -> bool {
+    if !Path::exists(&out_dir) {
+        fs::create_dir_all(&out_dir);
+    } else {
+        return false
+    }
+
+    let url = format!("/api/attempts/{}/template", attempt_id);
+
+    println!("{:?}", attempt_id);
+    utils::download_tgz(url, &token, out_dir.clone());
+    println!("Created {}", &out_dir.to_str().unwrap());
+    return true
 }

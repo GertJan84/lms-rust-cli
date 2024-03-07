@@ -52,7 +52,7 @@ fn main() {
             Command::new("download")
                 .about("Download your last-submitted work for the current assignment")
                 .arg(
-                    Arg::new("Node id")
+                    Arg::new("id")
                         .help("The node id optionall followed by a '~' and a attempt number")
                         .num_args(1)
                         .required(true)
@@ -62,7 +62,7 @@ fn main() {
             Command::new("grade")
                 .about("Teachers only: download everything needed for grading")
                 .arg(
-                    Arg::new("student's short name")
+                    Arg::new("short_name")
                         .help("The student's short name optionall followed by '@' the node id and '~' attempt number ")
                         .num_args(1)
                         .required(true)
@@ -71,11 +71,22 @@ fn main() {
         .get_matches();
 
     if let Some(subcommand) = cmd.subcommand_name() {
+        // TODO: Fix this
         let command = subcommand.to_string();
         let matches = Commands::get_command(command);
-//        println!("{:#?}", cmd.subcommand());
-        Commands::execute(&matches)
+        //let arg = match cmd.subcommand() {
+        //    Some((command, arg)) => arg,
+        //    _ => unreachable!("what is happening")
+        //};
+        //match arg.get_one::<String>("id") {
+        //    Some(return_arg) => {
+        //        Commands::execute(&matches, return_arg.to_string())
+        //    }, 
+        //    None => {
+        //        Commands::execute(&matches, "".to_string())
+        //    }
+        //}
+
+        Commands::execute(&matches, "".to_string())
     }
-
-
 }

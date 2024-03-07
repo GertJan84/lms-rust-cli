@@ -106,5 +106,4 @@ pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
             exit(1)
         }
     }
-
 }

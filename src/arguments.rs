@@ -10,15 +10,6 @@ use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
 
-pub enum Commands {
-    Open,
-    Grade,
-    Upload,
-    Download,
-    Template,
-    Login
-}
-
 struct Attempt {
     path: PathBuf,
     spec: String,
@@ -35,39 +26,31 @@ impl Attempt {
     }
 }
 
-
-impl Commands {
-    pub fn get_command(command: String) -> Self {
-        match command.to_lowercase().as_str() {
-            "open" => Commands::Open,
-            "grade" => Commands::Grade,
-            "upload" => Commands::Upload,
-            "download" => Commands::Download,
-            "template" => Commands::Template,
-            "login" => Commands::Login,
-            _ => {
-                eprintln!("Invalid command");
-                exit(1);
-            }
-        }
-    }
-
-    pub fn execute(&self, arg: String) {
-        let settings = Settings::new();
-        match self {
-            Commands::Open => open_logic(settings),
-            Commands::Grade => grade_logic(settings),
-            Commands::Upload => upload_logic(settings),
-            Commands::Download => download_logic(settings, arg),
-            Commands::Template => template_logic(settings),
-            Commands::Login => login_logic(settings)
+pub fn execute(command: &str, arg: String) {
+    let settings = Settings::new();
+    match command {
+        "open" => open_logic(settings),
+        "grade" => grade_logic(settings),
+        "upload" => upload_logic(settings),
+        "download" => download_logic(settings, arg),
+        "template" => template_logic(settings),
+        "login"=> login_logic(settings),
+        _ => {
+            eprintln!("invalid command {}", command);
+            exit(1)
         }
     }
 }
 
 fn open_logic(settings: Settings) -> () {
-    let out_dir = get_current_attempt(settings.config.get("auth", "token").unwrap_or("".to_string())).path;
-    match env::set_current_dir(out_dir) {
+    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let current_attempt = get_current_attempt(token.clone());
+
+    if !download_template(token, &current_attempt) {
+        println!("Already exists in {}", current_attempt.path.to_str().unwrap().to_string());
+    }
+
+    match env::set_current_dir(current_attempt.path) {
         Ok(_) =>{
             settings.editors.iter().for_each(|editor| {
                 if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Can't find which").success() {
@@ -109,17 +92,20 @@ fn upload_logic(settings: Settings) {
     } else {
         "tar"
     };
+
+    let token = settings.config.get("auth", "token").unwrap();
+    let current_attempt = get_current_attempt(token);
     
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(get_current_attempt(settings.config.get("auth", "token").unwrap()).path)
+        .arg(current_attempt.path)
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
         .arg(".");
 
     // TODO: Look over this again (output instand of status)?
-    match tar.output() {
+    let data = match tar.output() {
         Ok(output) => output,
         Err(_) => {
             eprintln!("Command not found: {}", cmd);
@@ -129,6 +115,13 @@ fn upload_logic(settings: Settings) {
             exit(1)
         }
     };
+
+    let url = format!("/api/attempt/{}/submission", current_attempt.id);
+    let response = utils::request(url, &token, data);
+    let json_res = utils::response_to_json(response);
+
+    println!("Uload complete: {}kb transferred", );
+    println!("Please remember that you still need to submit in the web interface");
 
     todo!("Send data to server")
 }
@@ -187,7 +180,10 @@ fn template_logic(settings: Settings) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let current_attempt = get_current_attempt(token.clone());
 
-    download_template(token, current_attempt.id, current_attempt.path);
+   if !download_template(token, &current_attempt) {
+        // TODO: Add path of folder to error message
+        println!("output directory already exists");
+    }
 }
 
 fn get_lms_dir() -> PathBuf {
@@ -218,9 +214,9 @@ fn get_current_attempt(token: String) -> Attempt {
             let mut content = cache_location.split_whitespace();
             if let (Some(path), Some(spec), Some(id)) = (content.next(), content.next(), content.next()) {
                 return Attempt::new(path.into(), spec.to_string(), id.to_string())
-            } else {
-                fs::remove_file(&cache);
-            }
+            } 
+
+            let _ = fs::remove_file(&cache);
             
         } 
 
@@ -245,21 +241,20 @@ fn get_current_attempt(token: String) -> Attempt {
         Err(err) => eprintln!("Can't write to cache because: {}", err)
     }
 
-    return Attempt::new(lms_dir, spec.to_string(), id.to_string())
+    Attempt::new(lms_dir, spec.to_string(), id.to_string())
 
 }
 
-fn download_template(token: String, attempt_id: String, out_dir: PathBuf) -> bool {
-    if !Path::exists(&out_dir) {
-        fs::create_dir_all(&out_dir);
+fn download_template(token: String, attempt: &Attempt) -> bool {
+    if !Path::exists(&attempt.path) {
+        let _ = fs::create_dir_all(&attempt.path);
     } else {
         return false
     }
 
-    let url = format!("/api/attempts/{}/template", attempt_id);
+    let url = format!("/api/attempts/{}/template", &attempt.id);
 
-    println!("{:?}", attempt_id);
-    utils::download_tgz(url, &token, out_dir.clone());
-    println!("Created {}", &out_dir.to_str().unwrap());
-    return true
+    utils::download_tgz(url, &token, attempt.path.clone());
+    println!("Created {}", &attempt.path.to_str().unwrap());
+    true
 }

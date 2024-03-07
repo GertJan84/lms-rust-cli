@@ -1,4 +1,3 @@
-use arguments::Commands;
 use std::env;
 use clap::{Command, Arg};
 
@@ -70,23 +69,19 @@ fn main() {
             )
         .get_matches();
 
-    if let Some(subcommand) = cmd.subcommand_name() {
-        // TODO: Fix this
-        let command = subcommand.to_string();
-        let matches = Commands::get_command(command);
-        //let arg = match cmd.subcommand() {
-        //    Some((command, arg)) => arg,
-        //    _ => unreachable!("what is happening")
-        //};
-        //match arg.get_one::<String>("id") {
-        //    Some(return_arg) => {
-        //        Commands::execute(&matches, return_arg.to_string())
-        //    }, 
-        //    None => {
-        //        Commands::execute(&matches, "".to_string())
-        //    }
-        //}
-
-        Commands::execute(&matches, "".to_string())
+    match cmd.subcommand() {
+        Some(subcommand) => {
+            match subcommand {
+                ("open", _) => arguments::execute("open", "".to_string()),
+                ("install", _) => arguments::execute("install", "".to_string()),
+                ("upload", _) => arguments::execute("upload", "".to_string()),
+                ("verify", _) => arguments::execute("verify", "".to_string()),
+                ("template", _) => arguments::execute("template", "".to_string()),
+                ("download", arg) => arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()),
+                ("grade", arg) => arguments::execute("grade", arg.get_one::<String>("short_name").unwrap().to_string()),
+                _ => eprintln!("invalid command")
+            }
+        },
+        _ => eprintln!("error")
     }
 }

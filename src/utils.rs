@@ -21,6 +21,7 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
     let res = client
         .get(url)
         .header("authorization", token)
+        .body(data)
         .send();
 
     match res {
@@ -55,7 +56,7 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
         }
         Err(_) => {
             // Request faild because the client is offline
-            return None
+            None
         }
     }
 }
@@ -96,7 +97,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
                     drop(stdin);
                 }
                 None => {
-                    eprintln!("Got no response form server");
+                    eprintln!("Warning: Got no response form server");
                     exit(1)
                 }
             }

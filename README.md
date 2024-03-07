@@ -7,8 +7,8 @@ The lms rust client
 
 ### Features
  - [ ] Upload work
- - [ ] Download work
- - [ ] Download template
+ - [X] Download work
+ - [X] Download template
  - [ ] Reorder file structure
  - [ ] Grade work
  - [X] Login

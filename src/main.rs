@@ -73,6 +73,7 @@ fn main() {
         Some(subcommand) => {
             match subcommand {
                 ("open", _) => arguments::execute("open", "".to_string()),
+                ("login", _) => arguments::execute("login", "".to_string()),
                 ("install", _) => arguments::execute("install", "".to_string()),
                 ("upload", _) => arguments::execute("upload", "".to_string()),
                 ("verify", _) => arguments::execute("verify", "".to_string()),

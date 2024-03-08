@@ -87,24 +87,31 @@ fn login_logic(mut settings: Settings) {
 fn upload_logic(settings: Settings) {
 
     // TODO: Use tar crate
-    let cmd = if cfg!(platform = "macos") {
+    let cmd = if cfg!(target_os = "macos") {
         "gtar"
     } else {
         "tar"
     };
 
     let token = settings.config.get("auth", "token").unwrap();
-    let current_attempt = get_current_attempt(token);
+    let current_attempt = get_current_attempt(token.clone());
+
+    // TODO: Check if something is in the folder
+    if !Path::exists(&current_attempt.path) {
+        eprintln!("There is no folder: {}", current_attempt.path.to_str().unwrap());
+        eprintln!("Try `lms template` first");
+        exit(1)
+    }
     
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(current_attempt.path)
+        .arg(current_attempt.path.to_str().unwrap().to_string())
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
-        .arg(".");
+        .arg(".")
+        .stdout(Stdio::piped());
 
-    // TODO: Look over this again (output instand of status)?
     let data = match tar.output() {
         Ok(output) => output,
         Err(_) => {
@@ -116,21 +123,38 @@ fn upload_logic(settings: Settings) {
         }
     };
 
-    let url = format!("/api/attempt/{}/submission", current_attempt.id);
-    let response = utils::request(url, &token, data);
-    let json_res = utils::response_to_json(response);
+    let url = format!("/api/attempts/{}/submission", current_attempt.id.to_string());
 
-    println!("Uload complete: {}kb transferred", );
-    println!("Please remember that you still need to submit in the web interface");
+    match utils::request("POST", url, &token, Some(data.stdout)) {
+        Some(res) => {
+            let json_res: serde_json::Value = utils::response_to_json(res);
 
-    todo!("Send data to server")
+            match json_res.get("transferred") {
+                Some(transferred) => {
+                    if let Some(upload_bytes) = transferred.as_u64() {
+                        let upload_kb = upload_bytes / 1024;
+                        println!("Uploaded complete: {}kb transferred", upload_kb);
+                        println!("Please remember that you still need to submit in the web interface")
+                    }
+                },
+                None => {
+                    eprintln!("Error getting transferred value");
+                    exit(1)
+                }
+            }
+        },
+        None => {
+            eprintln!("Faild to upload attempt");
+            exit(1)
+        }
+    }
 }
 
 
 fn download_logic(settings: Settings, arg: String) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let url_arg = format!("/api/attempts/@{}", arg.replace("~", ":"));
-    let response = utils::request(url_arg, &token, "".to_string());
+    let response = utils::request("GET", url_arg, &token, None);
 
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
@@ -200,7 +224,7 @@ fn get_current_attempt(token: String) -> Attempt {
     let mut cache = lms_dir.clone();
     cache.push(".cache");
 
-    let res = utils::request("/api/attempts/current".to_string(), &token, "".to_string());
+    let res = utils::request("GET", "/api/attempts/current".to_string(), &token, None);
 
     if res.is_none() {
         if Path::exists(&cache) {

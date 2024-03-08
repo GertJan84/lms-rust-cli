@@ -9,7 +9,7 @@ use reqwest::{
 
 
 
-pub fn request(path: String, token: &String, data: String) -> Option<Response>  {
+pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, crate::CLI_VERSION)
     } else {
@@ -18,11 +18,15 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
 
     let client = Client::new();
 
-    let res = client
-        .get(url)
-        .header("authorization", token)
-        .body(data)
-        .send();
+    let res = match method {
+        "GET" => client.get(url).header("authorization", token).send(),
+        "POST" => client.post(url).header("authorization", token).body(data.unwrap()).send(),
+        _=> {
+            eprintln!("Invalid method: {}", method);
+            exit(1)
+        }
+    };
+
 
     match res {
         Ok(res) => {
@@ -37,7 +41,7 @@ pub fn request(path: String, token: &String, data: String) -> Option<Response>  
                 }
 
                 StatusCode::FORBIDDEN => {
-                    eprintln!("You dont have the right to access this");
+                    eprintln!("You don't have the right to access this");
                     exit(1)
                 }
 
@@ -73,7 +77,7 @@ pub fn response_to_json(res: Response) -> Value {
 }
 
 pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
-    let res = request(path, token, "".to_string());
+    let res = request("GET", path, token, None);
 
     let mut tar_process = Command::new("tar")
         .arg("xzC")

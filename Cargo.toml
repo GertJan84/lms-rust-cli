@@ -1,10 +1,11 @@
 [package]
-name = "lms-rust"
+name = "lms"
 auther = ["Gert-Jan"]
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "lms cli client writen in rust"
+readme = "README.md"
+repository = "https://gitlab.com/gj-535479/lms-rust-cli/"
 
 [dependencies]
 clap = "4.5.1"

@@ -9,7 +9,7 @@ The lms rust client
  - [X] Upload work
  - [X] Download work
  - [X] Download template
- - [ ] Reorder file structure
+ - [X] Reorder file structure
  - [ ] Grade work
  - [X] Login
  - [X] Open work dir
@@ -18,6 +18,5 @@ The lms rust client
 ### Extra features
  - [X] Change default editor
  - [X] Open work offline 
- - [ ] Use tar rust module 
  
 Avalible for `arm` and `x86` systems

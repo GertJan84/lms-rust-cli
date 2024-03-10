@@ -89,7 +89,6 @@ fn login_logic(mut settings: Settings) {
 
 fn upload_logic(settings: Settings) {
 
-    // TODO: Use tar crate
     let cmd = if cfg!(target_os = "macos") {
         "gtar"
     } else {
@@ -290,7 +289,7 @@ fn handle_verify() {
     move_node_directories();
 }
 
-fn move_node_directories() -> Result<(), std::io::Error> {
+fn move_node_directories() -> bool {
     let lms_dir = get_lms_dir();
 
     let correct_pathes_json = match utils::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
@@ -301,27 +300,81 @@ fn move_node_directories() -> Result<(), std::io::Error> {
         }
     };
 
-    let misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
+    let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
     
-    println!("{:?}", correct_pathes_json);
-
     let target_dir = lms_dir.join("*/*");
     // Get all directorys in lms [python, pwa, static-web, ..etc]
     for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
 
-        let local_path = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
+        let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
 
         // Get all chilled directorys in lms [css, vars, svelte, ..etc]
         if let Ok(ref path) = dir {
             if path.is_dir() {
-                let node_id = path.file_name().unwrap();
-                if local_path.eq("grading") {
+                let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
+
+                if local_path_current.eq("grading") {
                     continue
                 }
-                println!("node_id: {:?}, local: {:?}", node_id, local_path);
+
+                // TODO: Refactor this
+                if let correct_path_object = Some(&correct_pathes_json) {
+                    let pressent_node_id = correct_pathes_json.as_object().unwrap().get(&node_id);
+                    if pressent_node_id.is_some() {
+                        if let correct_path = pressent_node_id.unwrap().as_str().unwrap().to_string() {
+                            if !correct_path.eq(local_path_current.to_str().unwrap()) {
+                                let local_path = lms_dir.join(local_path_current).join(&node_id);
+                                let valid_path = lms_dir.join(correct_path).join(&node_id);
+                                if !Path::exists(&valid_path) {
+                                    misplaced.insert(
+                                        local_path,
+                                        valid_path
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
         }
     }
 
-    Ok(())
+    if misplaced.len() != 0 {
+        println!("These directories are not in their recommanded locations:");
+        for (local_directory, valid_directory) in &misplaced {
+            println!("  {} -> {}", local_directory.to_str().unwrap().to_string(), valid_directory.to_str().unwrap().to_string());
+            let permission = prompt_yes_no("Would you like to move them".to_string());
+
+            if !permission {
+                return false 
+            }
+            
+            let _ = fs::rename(local_directory, valid_directory);
+
+        }
+    }
+
+
+    true
+}
+
+fn prompt_yes_no(message: String) -> bool {
+
+    loop {
+        println!("{} [Y, n]: ", message);
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).expect("Faild to get input");
+
+        let trim_input = input.trim().to_lowercase();
+
+        // TODO: refactor to match
+        if trim_input.eq("y") ||  trim_input.eq("") {
+            return true
+        } else if trim_input.eq("n") {
+            return false
+        } else {
+            println!("{}: is not valid", trim_input);        
+        }
+    }
 }

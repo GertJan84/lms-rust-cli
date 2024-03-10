@@ -11,7 +11,7 @@ mod utils;
 extern crate lazy_static;
 
 
-pub const CLI_VERSION: &'static str = "14";
+pub const CLI_VERSION: &'static str = "15";
 
 lazy_static! {
     pub static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    

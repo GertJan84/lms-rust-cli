@@ -16,15 +16,17 @@ const AUTH_TOKEN_LENGHT: u8 = 69;
 struct Attempt {
     path: PathBuf,
     spec: String,
-    id: String
+    id: String,
+    offline: bool
 }
 
 impl Attempt {
-    pub fn new(path: PathBuf, spec: String, id: String) -> Self {
+    pub fn new(path: PathBuf, spec: String, id: String, offline: bool) -> Self {
         Self {
             path,
             spec,
-            id
+            id,
+            offline
         }
     }
 }
@@ -46,7 +48,7 @@ pub fn execute(command: &str, arg: String) {
     }
 }
 
-fn open_ide(current_attempt: Attempt, editors: Vec<String>) -> () {
+fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
     match env::set_current_dir(&current_attempt.path) {
         Ok(_) =>{
             let mut editors = editors.clone();
@@ -80,17 +82,21 @@ fn open_ide(current_attempt: Attempt, editors: Vec<String>) -> () {
 fn open_logic(settings: Settings) -> () {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let current_attempt = get_current_attempt(token.clone());
+    
+    if !download_template(token, &current_attempt) {
+        println!("Already exists in {}", &current_attempt.path.to_str().unwrap().to_string());
+    }
+
+    if current_attempt.offline {
+        open_ide(&current_attempt, &settings.editors)
+    }
+
 
     if settings.config.getbool("setup", "move_node_directories").unwrap().unwrap_or(true) {
         verify_logic()
     }
 
-    if !download_template(token, &current_attempt) {
-        println!("Already exists in {}", current_attempt.path.to_str().unwrap().to_string());
-    }
-
-    open_ide(current_attempt, settings.editors)
-
+    open_ide(&current_attempt, &settings.editors)
 }
 
 fn grade_logic(settings: Settings, arg: String) {
@@ -209,6 +215,7 @@ fn upload_logic(settings: Settings) {
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
         .arg(".")
+        .stdin(Stdio::null())
         .stdout(Stdio::piped());
 
     let data = match tar.output() {
@@ -337,14 +344,10 @@ fn get_current_attempt(token: String) -> Attempt {
             };
             let mut content = cache_location.split_whitespace();
             if let (Some(path), Some(spec), Some(id)) = (content.next(), content.next(), content.next()) {
-                return Attempt::new(path.into(), spec.to_string(), id.to_string())
+                return Attempt::new(path.into(), spec.to_string(), id.to_string(), true)
             } 
-
             let _ = fs::remove_file(&cache);
-
-
         } 
-
         eprintln!("No cache file");
         exit(1)
     }
@@ -371,23 +374,27 @@ fn get_current_attempt(token: String) -> Attempt {
         Err(err) => eprintln!("Can't write to cache because: {}", err)
     }
 
-    Attempt::new(lms_dir, spec.to_string(), id.to_string())
+    Attempt::new(lms_dir, spec.to_string(), id.to_string(), false)
 
 }
 
 fn download_template(token: String, attempt: &Attempt) -> bool {
     if !Path::exists(&attempt.path) {
         let _ = fs::create_dir_all(&attempt.path);
+        println!("Created {}", &attempt.path.to_str().unwrap());
     } else {
         if !utils::is_folder_empty(&attempt.path).unwrap() {
             return false
         }
     }
 
-    let url = format!("/api/attempts/{}/template", &attempt.id);
+    if attempt.offline {
+        println!("No connection to server");
+        return false
+    }
 
+    let url = format!("/api/attempts/{}/template", &attempt.id);
     utils::download_tgz(url, &token, &attempt.path);
-    println!("Created {}", &attempt.path.to_str().unwrap());
     true
 }
 

@@ -86,6 +86,10 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
         "tar"
     };
 
+    if res.is_none() {
+        return
+    }
+
     let mut tar_process = Command::new(cmd)
         .arg("xzC")
         .arg(out_dir)
@@ -101,7 +105,6 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
                 Some(mut unwrap_res) => {
                     let mut res_body = vec![];
                     let _ = unwrap_res.copy_to(&mut res_body);
-                    println!("{:?}", stdin);
                     let _ = stdin.write(&res_body);
 
                 }

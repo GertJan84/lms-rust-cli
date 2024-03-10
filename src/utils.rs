@@ -79,7 +79,13 @@ pub fn response_to_json(res: Response) -> Value {
 pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
     let res = request("GET", path, token, None);
 
-    let mut tar_process = Command::new("tar")
+    let cmd = if cfg!(target_os = "macos") {
+        "gtar"
+    } else {
+        "tar"
+    };
+
+    let mut tar_process = Command::new(cmd)
         .arg("xzC")
         .arg(out_dir)
         .stdin(Stdio::piped())

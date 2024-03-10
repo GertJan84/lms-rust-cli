@@ -1,3 +1,5 @@
+extern crate glob;
+
 use std::env;
 use clap::{Command, Arg};
 

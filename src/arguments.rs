@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use glob::glob;
 use std::env;
 use std::fs;
 use std::process::{Command, exit, Stdio};
@@ -6,6 +7,7 @@ use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
 use url::form_urlencoded;
 use webbrowser;
+use std::collections::HashMap;
 use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
@@ -34,6 +36,7 @@ pub fn execute(command: &str, arg: String) {
         "upload" => upload_logic(settings),
         "download" => download_logic(settings, arg),
         "template" => template_logic(settings),
+        "verify" => handle_verify(),
         "login"=> login_logic(settings),
         _ => {
             eprintln!("invalid command {}", command);
@@ -183,7 +186,7 @@ fn download_logic(settings: Settings, arg: String) {
 
                     let select_attempts = select_attempt.get("spec").unwrap().clone();
 
-                    fs::create_dir_all(&out_dir);
+                    let _ = fs::create_dir_all(&out_dir);
 
                     let url = format!("/api/attempts/{}/submission", select_attempts.as_str().unwrap());
                     utils::download_tgz(url, &token, out_dir)
@@ -281,4 +284,44 @@ fn download_template(token: String, attempt: &Attempt) -> bool {
     utils::download_tgz(url, &token, attempt.path.clone());
     println!("Created {}", &attempt.path.to_str().unwrap());
     true
+}
+
+fn handle_verify() {
+    move_node_directories();
+}
+
+fn move_node_directories() -> Result<(), std::io::Error> {
+    let lms_dir = get_lms_dir();
+
+    let correct_pathes_json = match utils::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
+        Some(data) => utils::response_to_json(data),
+        None => {
+            eprintln!("Cant convert paths to json");
+            exit(1)
+        }
+    };
+
+    let misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
+    
+    println!("{:?}", correct_pathes_json);
+
+    let target_dir = lms_dir.join("*/*");
+    // Get all directorys in lms [python, pwa, static-web, ..etc]
+    for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
+
+        let local_path = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
+
+        // Get all chilled directorys in lms [css, vars, svelte, ..etc]
+        if let Ok(ref path) = dir {
+            if path.is_dir() {
+                let node_id = path.file_name().unwrap();
+                if local_path.eq("grading") {
+                    continue
+                }
+                println!("node_id: {:?}, local: {:?}", node_id, local_path);
+            }
+        }
+    }
+
+    Ok(())
 }

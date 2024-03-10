@@ -104,8 +104,6 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
                     println!("{:?}", stdin);
                     let _ = stdin.write(&res_body);
 
-                    // Write all to res_body to stdin and drop stdin
-                    drop(stdin);
                 }
                 None => {
                     eprintln!("Warning: Got no response form server");

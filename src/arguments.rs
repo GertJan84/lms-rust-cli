@@ -47,13 +47,26 @@ pub fn execute(command: &str, arg: String) {
 }
 
 fn open_ide(current_attempt: Attempt, editors: Vec<String>) -> () {
-    match env::set_current_dir(current_attempt.path) {
-        // TODO: Read .lms-ide with prio
+    match env::set_current_dir(&current_attempt.path) {
         Ok(_) =>{
+            let mut editors = editors.clone();
+            if Path::exists(&current_attempt.path.join(".lms-ide")) {
+                let lms_ide = fs::read_to_string(".lms-ide");
+                editors.insert(0, lms_ide.unwrap_or("".to_string()))
+            }
+                
             editors.iter().for_each(|editor| {
+                let mut editor_parts = editor.split_whitespace();
+                let editor_name = &editor_parts.next().unwrap_or_default();
+                let mut args: Vec<&str> = editor_parts.collect();
+
+                if args.len() == 0 {
+                    args.push(".")
+                }
+
                 if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Can't find which").success() {
-                    Command::new(format!("{}", editor))
-                        .arg(".")
+                    Command::new(format!("{}", editor_name))
+                        .args(args)
                         .status()
                         .expect("Failed to execute editor");
                     exit(0)
@@ -177,11 +190,16 @@ fn upload_logic(settings: Settings) {
     let token = settings.config.get("auth", "token").unwrap();
     let current_attempt = get_current_attempt(token.clone());
 
-    // TODO: Check if something is in the folder
     if !Path::exists(&current_attempt.path) {
         eprintln!("There is no folder: {}", current_attempt.path.to_str().unwrap());
         eprintln!("Try `lms template` first");
         exit(1)
+    }
+
+    if utils::is_folder_empty(&current_attempt.path).unwrap() {
+        if !prompt_yes_no("This folder is currently empty are you sure you want to upload".to_string()) {
+            exit(0)
+        }
     }
     
     let mut tar = Command::new(cmd);
@@ -286,8 +304,9 @@ fn template_logic(settings: Settings) {
     let current_attempt = get_current_attempt(token.clone());
 
    if !download_template(token, &current_attempt) {
-        // TODO: Add path of folder to error message
-        println!("output directory already exists");
+        let error_message = format!("output directory {} already exists", current_attempt.path.to_str().unwrap().to_string());
+        eprintln!("{}", error_message);
+        exit(1)
     }
 }
 
@@ -333,6 +352,11 @@ fn get_current_attempt(token: String) -> Attempt {
     let online_attempt = utils::response_to_json(res.unwrap());
     let assignment_path = &online_attempt;
 
+    if assignment_path.is_null() {
+        println!("You currently dont have a assingment open");  
+        exit(0)
+    }
+
     let relative_path = &assignment_path.get("path").unwrap().as_str().unwrap();
 
     let id = &assignment_path.get("attempt_id").unwrap().as_number().unwrap();
@@ -355,7 +379,9 @@ fn download_template(token: String, attempt: &Attempt) -> bool {
     if !Path::exists(&attempt.path) {
         let _ = fs::create_dir_all(&attempt.path);
     } else {
-        return false
+        if !utils::is_folder_empty(&attempt.path).unwrap() {
+            return false
+        }
     }
 
     let url = format!("/api/attempts/{}/template", &attempt.id);

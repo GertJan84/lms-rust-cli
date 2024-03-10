@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::env;
 use configparser::ini::Ini;
 
-const FALLBACK: [&str; 3] = ["code", "vscode", "codium"];
+const FALLBACK: [&str; 4] = ["nvim", "code", "vscode", "codium"];
 
 pub struct Settings {
     pub config: Ini,

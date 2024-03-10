@@ -1,4 +1,5 @@
 use serde_json::Value;
+use std::fs;
 use std::path::PathBuf;
 use std::io::Write;
 use std::process::{Command, Stdio, exit};
@@ -76,7 +77,7 @@ pub fn response_to_json(res: Response) -> Value {
     }
 }
 
-pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
+pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     let res = request("GET", path, token, None);
 
     let cmd = if cfg!(target_os = "macos") {
@@ -117,4 +118,14 @@ pub fn download_tgz(path: String, token: &String, out_dir: PathBuf) -> () {
             exit(1)
         }
     }
+}
+
+pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
+    let dir_entris = fs::read_dir(path)?;
+
+    for _ in dir_entris {
+        return Ok(false)
+    }
+
+    Ok(true)
 }

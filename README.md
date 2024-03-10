@@ -10,7 +10,7 @@ The lms rust client
  - [X] Download work
  - [X] Download template
  - [X] Reorder file structure
- - [ ] Grade work
+ - [X] Grade work
  - [X] Login
  - [X] Open work dir
  - [ ] Handle setup

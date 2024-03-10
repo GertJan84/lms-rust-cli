@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::os::unix::fs::symlink;
 use glob::glob;
 use std::env;
 use std::fs;
@@ -32,11 +33,11 @@ pub fn execute(command: &str, arg: String) {
     let settings = Settings::new();
     match command {
         "open" => open_logic(settings),
-        "grade" => grade_logic(settings),
+        "grade" => grade_logic(settings, arg),
         "upload" => upload_logic(settings),
         "download" => download_logic(settings, arg),
         "template" => template_logic(settings),
-        "verify" => handle_verify(),
+        "verify" => verify_logic(),
         "login"=> login_logic(settings),
         _ => {
             eprintln!("invalid command {}", command);
@@ -45,17 +46,11 @@ pub fn execute(command: &str, arg: String) {
     }
 }
 
-fn open_logic(settings: Settings) -> () {
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let current_attempt = get_current_attempt(token.clone());
-
-    if !download_template(token, &current_attempt) {
-        println!("Already exists in {}", current_attempt.path.to_str().unwrap().to_string());
-    }
-
+fn open_ide(current_attempt: Attempt, editors: Vec<String>) -> () {
     match env::set_current_dir(current_attempt.path) {
+        // TODO: Read .lms-ide with prio
         Ok(_) =>{
-            settings.editors.iter().for_each(|editor| {
+            editors.iter().for_each(|editor| {
                 if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Can't find which").success() {
                     Command::new(format!("{}", editor))
                         .arg(".")
@@ -69,8 +64,92 @@ fn open_logic(settings: Settings) -> () {
     }
 }
 
-fn grade_logic(settings: Settings) {
-    todo!("Implelent grade logic")
+fn open_logic(settings: Settings) -> () {
+    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let current_attempt = get_current_attempt(token.clone());
+
+    if settings.config.getbool("setup", "move_node_directories").unwrap().unwrap_or(true) {
+        verify_logic()
+    }
+
+    if !download_template(token, &current_attempt) {
+        println!("Already exists in {}", current_attempt.path.to_str().unwrap().to_string());
+    }
+
+    open_ide(current_attempt, settings.editors)
+
+}
+
+fn grade_logic(settings: Settings, arg: String) {
+    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
+    let response = utils::request("GET", url_arg, &token, None);
+
+    let attempts = match response {
+        Some(data) => utils::response_to_json(data),
+        None => {
+            eprintln!("no attempt found");
+            exit(1)
+        }
+    };
+
+    let attempt = &attempts[0];
+
+    let out_dir = get_lms_dir().join("grading").join(attempt.get("spec").unwrap().as_str().unwrap().to_string().replace(":", "~"));
+
+    if Path::exists(&out_dir) {
+        if utils::is_folder_empty(&out_dir).unwrap() {
+            match fs::remove_dir_all(&out_dir) {
+                Ok(_) => {},
+                Err(err) => eprintln!("Cant remove directory because: {}", err)
+            }
+        }
+    }
+   
+    if Path::exists(&out_dir) {
+        eprintln!("Subbmission already exsists in {}", out_dir.to_str().unwrap().to_string())
+    } else {
+        let _ = fs::create_dir_all(&out_dir);
+        let url = format!("/api/attempts/{}/submission", attempt.get("spec").unwrap().as_str().unwrap().to_string());
+        utils::download_tgz(url, &token, &out_dir);
+        println!("Downloaded to {}", out_dir.to_str().unwrap().to_string());
+    }
+
+    for name in vec!["_node", "_solution", "_template"] {
+        let _ = fs::remove_dir_all(&out_dir.join(name));
+
+
+        let mut curruculum_dir = PathBuf::new();
+        curruculum_dir.push(env::var("HOME").unwrap());
+        curruculum_dir.push(settings.config.get("grade", "curriculum_directory").unwrap_or("curriculum".to_string()));
+
+        let mut glob_path = PathBuf::new();
+        glob_path.push(&curruculum_dir);
+        glob_path.push(&attempt.get("period").unwrap().to_string());
+        glob_path.push(&attempt.get("module_id").unwrap().to_string());
+        glob_path.push(format!("[0-9][0-9]-{}", &attempt.get("node_id").unwrap().to_string()));
+
+        let glob_str = glob_path.to_str().expect("Invalid UTF-8 in path");
+        if let Ok(mut paths) = glob(&glob_str) {
+            match paths.next() {
+                Some(found_node_id) => {
+                    let node_id = found_node_id.unwrap();
+                    let _ = symlink(&node_id, out_dir.join(format!("_{}", node_id.to_str().unwrap().to_string())));
+
+                    for what in vec!["solution", "template"] {
+                        let what_dir = out_dir.join(format!("{}{}", what, attempt.get("variant_id").unwrap().as_str().unwrap().to_string()));
+                        if let Ok(metadata) = fs::metadata(&what_dir) {
+                            let _ = metadata
+                                .is_dir()
+                                .then(|| symlink(&what, out_dir.join(format!("_{}", what))))
+                                .expect("Faild to create symlink");
+                        };
+                    }
+                },
+                None => {} 
+            }
+        }
+    }
 }
 
 fn login_logic(mut settings: Settings) {
@@ -188,7 +267,7 @@ fn download_logic(settings: Settings, arg: String) {
                     let _ = fs::create_dir_all(&out_dir);
 
                     let url = format!("/api/attempts/{}/submission", select_attempts.as_str().unwrap());
-                    utils::download_tgz(url, &token, out_dir)
+                    utils::download_tgz(url, &token, &out_dir)
                 }
                 None => exit(1)
             }
@@ -243,7 +322,8 @@ fn get_current_attempt(token: String) -> Attempt {
             } 
 
             let _ = fs::remove_file(&cache);
-            
+
+
         } 
 
         eprintln!("No cache file");
@@ -280,13 +360,15 @@ fn download_template(token: String, attempt: &Attempt) -> bool {
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
 
-    utils::download_tgz(url, &token, attempt.path.clone());
+    utils::download_tgz(url, &token, &attempt.path);
     println!("Created {}", &attempt.path.to_str().unwrap());
     true
 }
 
-fn handle_verify() {
-    move_node_directories();
+fn verify_logic() {
+    if move_node_directories() {
+        println!("All nodes are in the right place!");
+    }
 }
 
 fn move_node_directories() -> bool {
@@ -335,7 +417,6 @@ fn move_node_directories() -> bool {
                         }
                     }
                 }
-
             }
         }
     }
@@ -354,13 +435,10 @@ fn move_node_directories() -> bool {
 
         }
     }
-
-
     true
 }
 
 fn prompt_yes_no(message: String) -> bool {
-
     loop {
         println!("{} [Y, n]: ", message);
         let mut input = String::new();

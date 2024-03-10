@@ -39,6 +39,7 @@ pub fn execute(command: &str, arg: String) {
         "upload" => upload_logic(settings),
         "download" => download_logic(settings, arg),
         "template" => template_logic(settings),
+        "install" => install_logic(),
         "verify" => verify_logic(),
         "login"=> login_logic(settings),
         _ => {
@@ -97,6 +98,11 @@ fn open_logic(settings: Settings) -> () {
     }
 
     open_ide(&current_attempt, &settings.editors)
+}
+
+fn install_logic() {
+    eprintln!("Feature not implemented");
+    exit(1)
 }
 
 fn grade_logic(settings: Settings, arg: String) {

@@ -48,8 +48,9 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
 
                 StatusCode::IM_A_TEAPOT => {
-                    // TODO: Update client
-                    todo!("Client is outdated: utils teapot");
+                    // TODO: Update client (optional)
+                    println!("Client needs to be updated");
+                    exit(1);
                 }
                 _ => {
                     eprintln!("Server status not handled: {:?}", res.status());

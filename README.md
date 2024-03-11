@@ -18,5 +18,8 @@ The lms rust client
 ### Extra features
  - [X] Change default editor
  - [X] Open work offline 
- 
+ - [ ] Add set command for config chages 
+ - [ ] Add get command to verify config changes 
+ - [ ] Add lms check to check TODO in code
+
 Avalible for `arm` and `x86` systems

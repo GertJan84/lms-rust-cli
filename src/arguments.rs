@@ -209,7 +209,7 @@ fn upload_logic(settings: Settings) {
     }
 
     if utils::is_folder_empty(&current_attempt.path).unwrap() {
-        if !prompt_yes_no("This folder is currently empty are you sure you want to upload".to_string()) {
+        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload".to_string()) {
             exit(0)
         }
     }
@@ -464,34 +464,14 @@ fn move_node_directories() -> bool {
         println!("These directories are not in their recommanded locations:");
         for (local_directory, valid_directory) in &misplaced {
             println!("  {} -> {}", local_directory.to_str().unwrap().to_string(), valid_directory.to_str().unwrap().to_string());
-            let permission = prompt_yes_no("Would you like to move them".to_string());
+            let permission = utils::prompt_yes_no("Would you like to move them".to_string());
 
             if !permission {
                 return false 
             }
-            
             let _ = fs::rename(local_directory, valid_directory);
-
         }
     }
     true
 }
 
-fn prompt_yes_no(message: String) -> bool {
-    loop {
-        println!("{} [Y, n]: ", message);
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input).expect("Faild to get input");
-
-        let trim_input = input.trim().to_lowercase();
-
-        // TODO: refactor to match
-        if trim_input.eq("y") ||  trim_input.eq("") {
-            return true
-        } else if trim_input.eq("n") {
-            return false
-        } else {
-            println!("{}: is not valid", trim_input);        
-        }
-    }
-}

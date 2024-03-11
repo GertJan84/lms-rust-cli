@@ -130,3 +130,22 @@ pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
 
     Ok(true)
 }
+
+pub fn prompt_yes_no(message: String) -> bool {
+    loop {
+        println!("{} [Y, n]: ", message);
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).expect("Faild to get input");
+
+        let trim_input = input.trim().to_lowercase();
+
+        // TODO: refactor to match
+        if trim_input.eq("y") ||  trim_input.eq("") {
+            return true
+        } else if trim_input.eq("n") {
+            return false
+        } else {
+            println!("{}: is not valid", trim_input);        
+        }
+    }
+}

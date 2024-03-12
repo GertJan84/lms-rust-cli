@@ -13,9 +13,6 @@ use reqwest::{
 
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
 
-    if Path::exists(&get_lms_dir().join(".latest_version")) {
-    }
-
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
     } else {

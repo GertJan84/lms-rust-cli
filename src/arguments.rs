@@ -120,7 +120,7 @@ fn grade_logic(settings: Settings, arg: String) {
 
     let attempt = &attempts[0];
 
-    let out_dir = get_lms_dir().join("grading").join(attempt.get("spec").unwrap().as_str().unwrap().to_string().replace(":", "~"));
+    let out_dir = utils::get_lms_dir().join("grading").join(attempt.get("spec").unwrap().as_str().unwrap().to_string().replace(":", "~"));
 
     if Path::exists(&out_dir) {
         if utils::is_folder_empty(&out_dir).unwrap() {
@@ -280,7 +280,7 @@ fn download_logic(settings: Settings, arg: String) {
 
     match attempt.as_object() {
         Some(select_attempt) => {
-            let mut out_dir = get_lms_dir();
+            let mut out_dir = utils::get_lms_dir();
 
             match select_attempt.get("path") {
                 Some(att) => {
@@ -323,16 +323,9 @@ fn template_logic(settings: Settings) {
     }
 }
 
-fn get_lms_dir() -> PathBuf {
-    let mut lms_dir = PathBuf::new();
-    lms_dir.push(env::var("HOME").unwrap());
-    lms_dir.push("lms");
-
-    lms_dir
-}
 
 fn get_current_attempt(token: String) -> Attempt {
-    let mut lms_dir = get_lms_dir();
+    let mut lms_dir = utils::get_lms_dir();
 
     let mut cache = lms_dir.clone();
     cache.push(".cache");
@@ -411,7 +404,7 @@ fn verify_logic() {
 }
 
 fn move_node_directories() -> bool {
-    let lms_dir = get_lms_dir();
+    let lms_dir = utils::get_lms_dir();
 
     let correct_pathes_json = match utils::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
         Some(data) => utils::response_to_json(data),

@@ -1,6 +1,7 @@
 use serde_json::Value;
+use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::io::Write;
 use std::process::{Command, Stdio, exit};
 use reqwest::{
@@ -11,10 +12,14 @@ use reqwest::{
 
 
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
+
+    if Path::exists(&get_lms_dir().join(".latest_version")) {
+    }
+
     let url = if path.contains("?") {
-        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, crate::CLI_VERSION)
+        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
     } else {
-        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, crate::CLI_VERSION)
+        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, "999")
     };
 
     let client = Client::new();
@@ -149,4 +154,13 @@ pub fn prompt_yes_no(message: String) -> bool {
             println!("{}: is not valid", trim_input);        
         }
     }
+}
+
+
+pub fn get_lms_dir() -> PathBuf {
+    let mut lms_dir = PathBuf::new();
+    lms_dir.push(env::var("HOME").unwrap());
+    lms_dir.push("lms");
+
+    lms_dir
 }

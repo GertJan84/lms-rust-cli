@@ -51,10 +51,10 @@ fn main() {
             )
         .subcommand(
             Command::new("download")
-                .about("Download your last-submitted work for the current assignment")
+                .about("Download submitted attempts or all attempts")
                 .arg(
                     Arg::new("id")
-                        .help("The node id optionall followed by a '~' and a attempt number")
+                        .help("The node id optionall followed by a '~' and a attempt number or 'all' to download all attempts")
                         .num_args(1)
                         .required(true)
                 )

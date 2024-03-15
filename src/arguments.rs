@@ -1,14 +1,18 @@
-use std::path::{Path, PathBuf};
-use std::os::unix::fs::symlink;
 use glob::glob;
-use std::env;
-use std::fs;
-use std::process::{Command, exit, Stdio};
+use std::{
+    process::{Command, exit, Stdio}, 
+    thread::sleep,
+    time::Duration,
+    collections::{HashSet, HashMap},
+    path::{Path, PathBuf},
+    os::unix::fs::symlink,
+    fs,
+    env
+};
 use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
 use url::form_urlencoded;
 use webbrowser;
-use std::collections::HashMap;
 use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
@@ -37,7 +41,7 @@ pub fn execute(command: &str, arg: String) {
         "open" => open_logic(settings),
         "grade" => grade_logic(settings, arg),
         "upload" => upload_logic(settings),
-        "download" => download_logic(settings, arg),
+        "download" => download_logic(&settings, arg),
         "template" => template_logic(settings),
         "install" => install_logic(),
         "verify" => verify_logic(),
@@ -263,16 +267,53 @@ fn upload_logic(settings: Settings) {
 }
 
 
-fn download_logic(settings: Settings, arg: String) {
+fn download_logic(settings: &Settings, arg: String) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let url_arg = format!("/api/attempts/@{}", arg.replace("~", ":"));
-    let response = utils::request("GET", url_arg, &token, None);
 
+    if !arg.eq("all") {
+        let _  = download_attempt(&arg, &token);
+    }
+
+    let response = utils::request("GET", "/api/node-paths".to_string(), &token, None);
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
         None => {
             eprintln!("no attempt found");
             exit(1)
+        }
+    };
+
+    let mut local_dirs: HashSet<String> = HashSet::new();
+    let target_dir = utils::get_lms_dir().join("*/*");
+    for path in  glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
+        match path {
+            Ok(path) => {
+                local_dirs.insert(path.as_path().file_name().unwrap().to_str().unwrap().to_string());
+            },
+            Err(_) => {}
+        }
+    }
+
+    attempts.as_object().unwrap().iter().for_each(|(assignment, _)| {
+        if !&assignment.contains("exam") {
+            if !local_dirs.contains(assignment) {
+                download_attempt(&assignment.to_string(), &token);
+                sleep(Duration::from_millis(500));
+            }
+        }
+    })
+}
+
+
+fn download_attempt(assignment: &String, token: &String) -> bool {
+    let url_arg = format!("/api/attempts/@{}", assignment.replace("~", ":"));
+    let response = utils::request("GET", url_arg, token, None);
+
+    let attempts = match response {
+        Some(data) => utils::response_to_json(data),
+        None => {
+            eprintln!("no attempt found: {}", assignment);
+            return false
         }
     };
 
@@ -286,11 +327,10 @@ fn download_logic(settings: Settings, arg: String) {
                 Some(att) => {
 
                     out_dir.push(att.as_str().unwrap());
-                    println!("{:?}", out_dir);
 
                     if Path::exists(&out_dir) {
                         eprintln!("output directory {} already exists", out_dir.to_str().unwrap());
-                        exit(1)
+                        return false
                     }
 
                     let select_attempts = select_attempt.get("spec").unwrap().clone();
@@ -298,18 +338,20 @@ fn download_logic(settings: Settings, arg: String) {
                     let _ = fs::create_dir_all(&out_dir);
 
                     let url = format!("/api/attempts/{}/submission", select_attempts.as_str().unwrap());
-                    utils::download_tgz(url, &token, &out_dir)
+                    utils::download_tgz(url, &token, &out_dir);
+                    println!("Downloaded: {} at: {}", assignment, &out_dir.to_str().unwrap());
                 }
-                None => exit(1)
+                None => return false 
             }
 
         },
 
         None => {
-            eprintln!("Cant find attempt");
-            exit(1)
+            eprintln!("Cant find attempt: {}", assignment);
+            return false
         }
     }
+    return true
 }
 
 fn template_logic(settings: Settings) {

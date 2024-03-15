@@ -103,7 +103,6 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
 
     match tar_process.stdin.take() {
         Some(mut stdin) => {
-
             match res {
                 Some(mut unwrap_res) => {
                     let mut res_body = vec![];
@@ -122,6 +121,8 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
             exit(1)
         }
     }
+
+    drop(tar_process)
 }
 
 pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {

@@ -1,6 +1,6 @@
 # LMS Rust client
 
-The lms rust client
+This isn't the official client for lms. 
 
 [lms](https://gitlab.com/saxion.nl/42/lms42)
 
@@ -19,6 +19,7 @@ The lms rust client
  - [X] Change default editor
  - [X] Open work offline 
  - [X] Download all assignments 
+ - [X] Check for todos in your code before upload for "sql", "rs", "py", "js", "css", "html", "svelte"
  - [ ] Add set command for config chages 
  - [ ] Add get command to verify config changes 
  - [ ] Add lms check to check TODO in code

@@ -117,7 +117,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
             }
         },
         None => {
-            eprintln!("Faild to get stdin ");
+            eprintln!("Faild to get stdin");
             exit(1)
         }
     }
@@ -135,7 +135,7 @@ pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
     Ok(true)
 }
 
-pub fn prompt_yes_no(message: String) -> bool {
+pub fn prompt_yes_no(message: &str) -> bool {
     loop {
         print!("{} [Y, n]: ", message);
         std::io::stdout().flush().unwrap();
@@ -162,3 +162,4 @@ pub fn get_lms_dir() -> PathBuf {
 
     lms_dir
 }
+

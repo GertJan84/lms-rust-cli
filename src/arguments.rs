@@ -16,6 +16,7 @@ use webbrowser;
 use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
+const SCAN_FILE_TYPE: [&str; 7] = ["sql", "rs", "py", "js", "css", "html", "svelte"];
 
 struct Attempt {
     path: PathBuf,
@@ -38,11 +39,11 @@ impl Attempt {
 pub fn execute(command: &str, arg: String) {
     let settings = Settings::new();
     match command {
-        "open" => open_logic(settings),
-        "grade" => grade_logic(settings, arg),
-        "upload" => upload_logic(settings),
+        "open" => open_logic(&settings),
+        "grade" => grade_logic(&settings, arg),
+        "upload" => upload_logic(&settings),
         "download" => download_logic(&settings, arg),
-        "template" => template_logic(settings),
+        "template" => template_logic(&settings),
         "install" => install_logic(),
         "verify" => verify_logic(),
         "login"=> login_logic(settings),
@@ -84,7 +85,7 @@ fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
     }
 }
 
-fn open_logic(settings: Settings) -> () {
+fn open_logic(settings: &Settings) -> () {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let current_attempt = get_current_attempt(token.clone());
     
@@ -105,11 +106,12 @@ fn open_logic(settings: Settings) -> () {
 }
 
 fn install_logic() {
-    eprintln!("Feature not implemented");
-    exit(1)
+    eprintln!("This feature is used for the recommanded Vistual studio code setup.");
+    eprintln!("This feature not implemented.");
+    exit(0)
 }
 
-fn grade_logic(settings: Settings, arg: String) {
+fn grade_logic(settings: &Settings, arg: String) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
     let response = utils::request("GET", url_arg, &token, None);
@@ -195,13 +197,7 @@ fn login_logic(mut settings: Settings) {
     let _ = webbrowser::open(url.as_str());
 }
 
-fn upload_logic(settings: Settings) {
-
-    let cmd = if cfg!(target_os = "macos") {
-        "gtar"
-    } else {
-        "tar"
-    };
+fn upload_logic(settings: &Settings) {
 
     let token = settings.config.get("auth", "token").unwrap();
     let current_attempt = get_current_attempt(token.clone());
@@ -211,9 +207,38 @@ fn upload_logic(settings: Settings) {
         eprintln!("Try `lms template` first");
         exit(1)
     }
+    
+    if settings.config.getbool("custom", "check_todo").unwrap().unwrap_or(true) {
+        if let Some(file_todo) = get_todo(&current_attempt.path) {
+            println!("You still have some todo in your code: ");
+            for (file, todos) in file_todo {
+                println!("\n{}: has some todos:", file);
+
+                for (idx, line) in todos {
+                    println!("  {} -> {}", idx, line)
+                }
+
+            }
+
+            if utils::prompt_yes_no("\nYou still have some TODO'S in your code do you want to fix them") {
+                println!("Upload cancelled");
+                exit(0)
+            }
+        }
+
+    }
+
+
+    let cmd = if cfg!(target_os = "macos") {
+        "gtar"
+    } else {
+        "tar"
+    };
+
+
 
     if utils::is_folder_empty(&current_attempt.path).unwrap() {
-        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload".to_string()) {
+        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload") {
             exit(0)
         }
     }
@@ -354,7 +379,7 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
     return true
 }
 
-fn template_logic(settings: Settings) {
+fn template_logic(settings: &Settings) {
     let token = settings.config.get("auth", "token").unwrap_or("".to_string());
     let current_attempt = get_current_attempt(token.clone());
 
@@ -478,9 +503,11 @@ fn move_node_directories() -> bool {
                     let pressent_node_id = correct_pathes_json.as_object().unwrap().get(&node_id);
                     if pressent_node_id.is_some() {
                         if let correct_path = pressent_node_id.unwrap().as_str().unwrap().to_string() {
+
                             if !correct_path.eq(local_path_current.to_str().unwrap()) {
                                 let local_path = lms_dir.join(local_path_current).join(&node_id);
                                 let valid_path = lms_dir.join(correct_path).join(&node_id);
+
                                 if !Path::exists(&valid_path) {
                                     misplaced.insert(
                                         local_path,
@@ -499,7 +526,7 @@ fn move_node_directories() -> bool {
         println!("These directories are not in their recommanded locations:");
         for (local_directory, valid_directory) in &misplaced {
             println!("  {} -> {}", local_directory.to_str().unwrap().to_string(), valid_directory.to_str().unwrap().to_string());
-            let permission = utils::prompt_yes_no("Would you like to move them".to_string());
+            let permission = utils::prompt_yes_no("Would you like to move them");
 
             if !permission {
                 return false 
@@ -508,5 +535,51 @@ fn move_node_directories() -> bool {
         }
     }
     true
+}
+
+fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
+    
+    let mut file_todo = HashMap::new();
+
+    for files in  glob(project_folder.join("*").to_str().unwrap()).unwrap() {
+        if let Ok(file) = files {
+
+            if !file.is_file() {
+                continue
+            } 
+
+            match file.extension() {
+                Some(ext) => {
+                    if !SCAN_FILE_TYPE.contains(&ext.to_str().unwrap()) {
+                        continue
+                    }
+                },
+                None => continue,
+            }
+
+
+            let lines: Vec<String> = fs::read_to_string(&file)
+                .unwrap()
+                .lines()
+                .map(String::from)
+                .collect();
+
+
+            let mut todo_dict = HashMap::new();
+            lines.iter().enumerate().rev().for_each(|(idx, line)| {
+                if line.contains("TODO") {
+                    todo_dict.insert(idx + 1, line.to_string());
+                }
+            });
+            file_todo.insert(file.file_name().unwrap().to_str().unwrap().to_string(), todo_dict);
+        }
+    }
+
+    if file_todo.len() != 0 {
+        return Some(file_todo)
+    }
+
+    None
+
 }
 

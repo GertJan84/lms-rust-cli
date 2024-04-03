@@ -17,6 +17,7 @@ use crate::{settings::Settings, utils};
 
 const AUTH_TOKEN_LENGHT: u8 = 69;
 const SCAN_FILE_TYPE: [&str; 7] = ["sql", "rs", "py", "js", "css", "html", "svelte"];
+const DOWNLOAD_EXCLUDE: [&str; 3] = ["exam", "project", "graduation"];
 
 struct Attempt {
     path: PathBuf,
@@ -320,11 +321,18 @@ fn download_logic(settings: &Settings, arg: String) {
     }
 
     attempts.as_object().unwrap().iter().for_each(|(assignment, _)| {
-        if !&assignment.contains("exam") {
-            if !local_dirs.contains(assignment) {
-                download_attempt(&assignment.to_string(), &token);
-                sleep(Duration::from_millis(500));
+        let mut ignore = false;
+
+        for exclude in DOWNLOAD_EXCLUDE {
+            if assignment.contains(exclude) {
+                ignore = true;
+                break
             }
+        }
+
+        if !local_dirs.contains(assignment) && !ignore {
+            download_attempt(&assignment.to_string(), &token);
+            sleep(Duration::from_millis(500));
         }
     })
 }

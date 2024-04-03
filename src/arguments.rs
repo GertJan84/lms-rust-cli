@@ -579,7 +579,10 @@ fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, S
                     todo_dict.insert(idx + 1, line.to_string());
                 }
             });
-            file_todo.insert(file.file_name().unwrap().to_str().unwrap().to_string(), todo_dict);
+
+            if !todo_dict.is_empty() {
+                file_todo.insert(file.file_name().unwrap().to_str().unwrap().to_string(), todo_dict);
+            }
         }
     }
 

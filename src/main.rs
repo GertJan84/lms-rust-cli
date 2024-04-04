@@ -54,7 +54,7 @@ fn main() {
                 .about("Download submitted attempts or all attempts")
                 .arg(
                     Arg::new("id")
-                        .help("The node id optionall followed by a '~' and a attempt number or 'all' to download all attempts")
+                        .help("The node id optional followed by a '~' and a attempt number or 'all' to download all attempts")
                         .num_args(1)
                         .required(true)
                 )
@@ -64,7 +64,7 @@ fn main() {
                 .about("Teachers only: download everything needed for grading")
                 .arg(
                     Arg::new("short_name")
-                        .help("The student's short name optionall followed by '@' the node id and '~' attempt number ")
+                        .help("The student's short name optional followed by '@' the node id and '~' attempt number ")
                         .num_args(1)
                         .required(true)
                 )
@@ -82,9 +82,9 @@ fn main() {
                 ("template", _) => arguments::execute("template", "".to_string()),
                 ("download", arg) => arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()),
                 ("grade", arg) => arguments::execute("grade", arg.get_one::<String>("short_name").unwrap().to_string()),
-                _ => eprintln!("invalid command")
+                _ => eprintln!("Invalid command")
             }
         },
-        _ => eprintln!("error")
+        _ => eprintln!("Error")
     }
 }

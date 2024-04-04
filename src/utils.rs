@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::io::Write;
 use std::process::{Command, Stdio, exit};
 use reqwest::{
@@ -63,7 +63,7 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
         }
         Err(_) => {
-            // Request faild because the client is offline
+            println!("Request failed because the client is offline");
             None
         }
     }
@@ -99,7 +99,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .spawn()
-        .expect("Faild to start tar process");
+        .expect("Failed to start tar process");
 
     match tar_process.stdin.take() {
         Some(mut stdin) => {
@@ -111,13 +111,13 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
 
                 }
                 None => {
-                    eprintln!("Warning: Got no response form server");
+                    eprintln!("Warning: Got no response from server");
                     exit(1)
                 }
             }
         },
         None => {
-            eprintln!("Faild to get stdin");
+            eprintln!("Failed to get stdin");
             exit(1)
         }
     }
@@ -140,7 +140,7 @@ pub fn prompt_yes_no(message: &str) -> bool {
         print!("{} [Y, n]: ", message);
         std::io::stdout().flush().unwrap();
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input).expect("Faild to get input");
+        std::io::stdin().read_line(&mut input).expect("Failed to get input");
 
         let trim_input = input.trim().to_lowercase();
 

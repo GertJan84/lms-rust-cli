@@ -1,4 +1,3 @@
-use clap::builder::Str;
 use glob::glob;
 use std::{
     process::{Command, exit, Stdio}, 
@@ -134,7 +133,7 @@ fn open_logic(settings: &Settings) -> () {
 }
 
 fn install_logic() {
-    eprintln!("This feature is used for the recommanded Vistual studio code setup.");
+    eprintln!("This feature is used for the recommended Visual Studio Code setup.");
     eprintln!("This feature not implemented.");
     exit(0)
 }
@@ -147,7 +146,7 @@ fn grade_logic(settings: &Settings, arg: String) {
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
         None => {
-            eprintln!("no attempt found");
+            eprintln!("No attempt found");
             exit(1)
         }
     };
@@ -166,7 +165,7 @@ fn grade_logic(settings: &Settings, arg: String) {
     }
    
     if Path::exists(&out_dir) {
-        eprintln!("Subbmission already exsists in {}", out_dir.to_str().unwrap().to_string())
+        eprintln!("Submission already exists in {}", out_dir.to_str().unwrap().to_string())
     } else {
         let _ = fs::create_dir_all(&out_dir);
         let url = format!("/api/attempts/{}/submission", attempt.get("spec").unwrap().as_str().unwrap().to_string());
@@ -201,7 +200,7 @@ fn grade_logic(settings: &Settings, arg: String) {
                             let _ = metadata
                                 .is_dir()
                                 .then(|| symlink(&what, out_dir.join(format!("_{}", what))))
-                                .expect("Faild to create symlink");
+                                .expect("Failed to create symlink");
                         };
                     }
                 },
@@ -238,9 +237,9 @@ fn upload_logic(settings: &Settings) {
     
     if settings.config.getbool("custom", "check_todo").unwrap().unwrap_or(true) {
         if let Some(file_todo) = get_todo(&current_attempt.path) {
-            println!("You still have some todo in your code: ");
+            println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
-                println!("\n{}: has some todos:", file);
+                println!("\n{}: has some TODO's:", file);
 
                 for (idx, line) in todos {
                     println!("  {} -> {}", idx, line)
@@ -248,7 +247,7 @@ fn upload_logic(settings: &Settings) {
 
             }
 
-            if utils::prompt_yes_no("\nYou still have some TODO'S in your code do you want to fix them") {
+            if utils::prompt_yes_no("\nYou still have some TODO's in your code do you want to fix them") {
                 println!("Upload cancelled");
                 exit(0)
             }
@@ -266,7 +265,7 @@ fn upload_logic(settings: &Settings) {
 
 
     if utils::is_folder_empty(&current_attempt.path).unwrap() {
-        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload") {
+        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload?") {
             exit(0)
         }
     }
@@ -286,7 +285,7 @@ fn upload_logic(settings: &Settings) {
         Err(_) => {
             eprintln!("Command not found: {}", cmd);
             if cfg!(platform = "macos") {
-                println!("Please install gnu-tar (using brew for instanse")
+                println!("Please install gnu-tar (using brew for instance)")
             }
             exit(1)
         }
@@ -313,7 +312,7 @@ fn upload_logic(settings: &Settings) {
             }
         },
         None => {
-            eprintln!("Faild to upload attempt");
+            eprintln!("Failed to upload attempt");
             exit(1)
         }
     }
@@ -331,7 +330,7 @@ fn download_logic(settings: &Settings, arg: String) {
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
         None => {
-            eprintln!("no attempt found");
+            eprintln!("No attempt found");
             exit(1)
         }
     };
@@ -372,7 +371,7 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
     let attempts = match response {
         Some(data) => utils::response_to_json(data),
         None => {
-            eprintln!("no attempt found: {}", assignment);
+            eprintln!("No attempt found: {}", assignment);
             return false
         }
     };
@@ -389,7 +388,7 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
                     out_dir.push(att.as_str().unwrap());
 
                     if Path::exists(&out_dir) {
-                        eprintln!("output directory {} already exists", out_dir.to_str().unwrap());
+                        eprintln!("Output directory {} already exists", out_dir.to_str().unwrap());
                         return false
                     }
 
@@ -419,7 +418,7 @@ fn template_logic(settings: &Settings) {
     let current_attempt = get_current_attempt(token.clone());
 
    if !download_template(token, &current_attempt) {
-        let error_message = format!("output directory {} already exists", current_attempt.path.to_str().unwrap().to_string());
+        let error_message = format!("Output directory {} already exists", current_attempt.path.to_str().unwrap().to_string());
         eprintln!("{}", error_message);
         exit(1)
     }
@@ -457,7 +456,7 @@ fn get_current_attempt(token: String) -> Attempt {
     let assignment_path = &online_attempt;
 
     if assignment_path.is_null() {
-        println!("You currently dont have a assingment open");  
+        println!("You currently don't have an assignment open");  
         exit(0)
     }
 
@@ -519,7 +518,7 @@ fn move_node_directories() -> bool {
     let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
     
     let target_dir = lms_dir.join("*/*");
-    // Get all directorys in lms [python, pwa, static-web, ..etc]
+    // Get all directories in lms [python, pwa, static-web, ..etc]
     for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
 
         let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
@@ -558,10 +557,10 @@ fn move_node_directories() -> bool {
     }
 
     if misplaced.len() != 0 {
-        println!("These directories are not in their recommanded locations:");
+        println!("These directories are not in their recommended locations:");
         for (local_directory, valid_directory) in &misplaced {
             println!("  {} -> {}", local_directory.to_str().unwrap().to_string(), valid_directory.to_str().unwrap().to_string());
-            let permission = utils::prompt_yes_no("Would you like to move them");
+            let permission = utils::prompt_yes_no("Would you like to move them?");
 
             if !permission {
                 return false 

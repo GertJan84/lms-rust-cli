@@ -91,7 +91,7 @@ fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
         // Check if the editor is available in the system's PATH
         let editor_available = Command::new("which")
             .arg(editor)
-            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()
             .expect("Can't find which")
             .success();

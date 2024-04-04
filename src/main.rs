@@ -43,7 +43,7 @@ fn main() {
             )
         .subcommand(
             Command::new("verify")
-                .about("Verify the integeity of your lms directory")
+                .about("Verify the integrity of your lms directory")
             )
         .subcommand(
             Command::new("template")

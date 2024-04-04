@@ -92,6 +92,7 @@ fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
         let editor_available = Command::new("which")
             .arg(editor)
             .stderr(Stdio::null())
+            .stdout(Stdio::null())
             .status()
             .expect("Can't find which")
             .success();

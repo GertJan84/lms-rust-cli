@@ -1,3 +1,4 @@
+use clap::builder::Str;
 use glob::glob;
 use std::{
     process::{Command, exit, Stdio}, 
@@ -56,34 +57,59 @@ pub fn execute(command: &str, arg: String) {
 }
 
 fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
-    match env::set_current_dir(&current_attempt.path) {
-        Ok(_) =>{
-            let mut editors = editors.clone();
-            if Path::exists(&current_attempt.path.join(".lms-ide")) {
-                let lms_ide = fs::read_to_string(".lms-ide");
-                editors.insert(0, lms_ide.unwrap_or("".to_string()))
-            }
-                
-            editors.iter().for_each(|editor| {
-                let mut editor_parts = editor.split_whitespace();
-                let editor_name = &editor_parts.next().unwrap_or_default();
-                let mut args: Vec<&str> = editor_parts.collect();
-
-                if args.len() == 0 {
-                    args.push(".")
-                }
-
-                if Command::new("which").arg(editor).stdout(Stdio::null()).status().expect("Can't find which").success() {
-                    Command::new(format!("{}", editor_name))
-                        .args(args)
-                        .status()
-                        .expect("Failed to execute editor");
-                    exit(0)
-                }
-            })
-        },
-        Err(err) => eprintln!("{}", err)
+    if let Err(err) = env::set_current_dir(&current_attempt.path) {
+        eprintln!("{}", err);
+        return;
     }
+
+    let mut editors = editors.clone();
+
+    if Path::new(".lms-ide").exists() {
+        match fs::read_to_string(".lms-ide") {
+            Ok(lms_ide) => {
+                // Parse lms_ide file to exclude dots and remove white so that "android-studio . " becomes "android-studio"
+                let lms_ide = lms_ide
+                    .split_whitespace()
+                    .filter(|&x| !x.contains("."))
+                    .collect();
+
+                editors.insert(0, lms_ide)
+            },
+            Err(_) => {},
+        }
+    }
+
+    for editor in &editors {
+        let mut editor_parts = editor.split_whitespace();
+        let editor_name = editor_parts.next().unwrap_or_default();
+        let mut args: Vec<&str> = editor_parts.collect();
+
+        if args.is_empty() {
+            args.push(".");
+        }
+
+        // Check if the editor is available in the system's PATH
+        let editor_available = Command::new("which")
+            .arg(editor)
+            .stdout(Stdio::null())
+            .status()
+            .expect("Can't find which")
+            .success();
+
+        // Skip to the next editor if the current one is not available
+        if !editor_available {
+            continue;
+        }
+
+        // Attempt to launch the editor and exit on success
+        Command::new(editor_name)
+            .args(args)
+            .status()
+            .expect("Failed to execute editor");
+        exit(0);
+    }
+
+    
 }
 
 fn open_logic(settings: &Settings) -> () {

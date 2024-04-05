@@ -2,27 +2,24 @@ extern crate glob;
 
 use std::env;
 use clap::{Command, Arg};
-
+use once_cell::sync::Lazy;
 mod settings;
 mod arguments;
 mod utils;
+mod files;
+mod io;
 
-#[macro_use]
-extern crate lazy_static;
+pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
-
-pub const CLI_VERSION: &'static str = "15";
-
-lazy_static! {
-    pub static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    
-}
-
+pub static BASE_URL: Lazy<String> = Lazy::new(|| {
+    env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string())
+});
 
 fn main() {
     let cmd = Command::new("lms")
         .bin_name("lms")
         .about("Lms cli interface")
-        .version(CLI_VERSION)
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(
@@ -43,7 +40,7 @@ fn main() {
             )
         .subcommand(
             Command::new("verify")
-                .about("Verify the integeity of your lms directory")
+                .about("Verify the integrity of your lms directory")
             )
         .subcommand(
             Command::new("template")
@@ -54,7 +51,7 @@ fn main() {
                 .about("Download submitted attempts or all attempts")
                 .arg(
                     Arg::new("id")
-                        .help("The node id optionall followed by a '~' and a attempt number or 'all' to download all attempts")
+                        .help("The node id optional followed by a '~' and a attempt number or 'all' to download all attempts")
                         .num_args(1)
                         .required(true)
                 )
@@ -64,7 +61,7 @@ fn main() {
                 .about("Teachers only: download everything needed for grading")
                 .arg(
                     Arg::new("short_name")
-                        .help("The student's short name optionall followed by '@' the node id and '~' attempt number ")
+                        .help("The student's short name optional followed by '@' the node id and '~' attempt number ")
                         .num_args(1)
                         .required(true)
                 )
@@ -82,9 +79,9 @@ fn main() {
                 ("template", _) => arguments::execute("template", "".to_string()),
                 ("download", arg) => arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()),
                 ("grade", arg) => arguments::execute("grade", arg.get_one::<String>("short_name").unwrap().to_string()),
-                _ => eprintln!("invalid command")
+                _ => eprintln!("Invalid command")
             }
         },
-        _ => eprintln!("error")
+        _ => eprintln!("Error")
     }
 }

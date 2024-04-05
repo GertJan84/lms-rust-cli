@@ -1,6 +1,6 @@
 [package]
 name = "lms"
-auther = ["Gert-Jan"]
+author = ["Gert-Jan de Boer", "Tom van het Bolscher"]
 version = "0.1.0"
 edition = "2021"
 description = "lms cli client written in rust"

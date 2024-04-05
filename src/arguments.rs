@@ -1,18 +1,23 @@
-use glob::glob;
-use std::{
-    collections::{HashMap, HashSet}, env, fs, io::{stdout, Write}, os::unix::fs::symlink, path::{Path, PathBuf}, process::{exit, Command, Stdio}, thread::sleep, time::Duration
-};
-use rand::{Rng, distributions::Alphanumeric};
+use crate::{attempt::Attempt, files, io, prompt, settings::Settings};
 use gethostname::gethostname;
+use glob::glob;
+use rand::{distributions::Alphanumeric, Rng};
+use std::{
+    collections::{HashMap, HashSet},
+    env, fs,
+    io::Write,
+    os::unix::fs::symlink,
+    path::{Path, PathBuf},
+    process::{exit, Command, Stdio},
+    thread::sleep,
+    time::Duration,
+};
 use url::form_urlencoded;
 use webbrowser;
-use crate::{attempt::{self, Attempt}, files, io, settings::Settings, utils};
 
 const AUTH_TOKEN_LENGTH: u8 = 69;
 const SCAN_FILE_TYPE: [&str; 7] = ["sql", "rs", "py", "js", "css", "html", "svelte"];
 const DOWNLOAD_EXCLUDE: [&str; 3] = ["exam", "project", "graduation"];
-
-
 
 pub fn execute(command: &str, arg: String) {
     let settings = Settings::new();
@@ -24,8 +29,8 @@ pub fn execute(command: &str, arg: String) {
         "template" => template_logic(&settings),
         "install" => install_logic(),
         "verify" => verify_logic(),
-        "login"=> login_logic(settings),
-        "folder"=> get_folder(&settings),
+        "login" => login_logic(settings),
+        "folder" => get_folder(&settings),
         _ => {
             eprintln!("invalid command {}", command);
             exit(1)
@@ -33,14 +38,12 @@ pub fn execute(command: &str, arg: String) {
     }
 }
 
-
-
 fn get_folder(settings: &Settings) {
     // get current assignment directory and STDout pipe it
     let current_attempt = Attempt::get_current_attempt(settings);
 
     let path_str = current_attempt.path.to_str().unwrap_or("");
-    let _ = std::io::stdout().write_all(path_str.as_bytes());
+    println!("{}", path_str);
     exit(1)
 }
 
@@ -62,11 +65,11 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
                     .collect();
 
                 editors.insert(0, lms_ide)
-            },
-            Err(_) => {},
+            }
+            Err(_) => {}
         }
     }
-    
+
     for editor in &editors {
         let mut editor_parts = editor.split_whitespace();
         let editor_name = editor_parts.next().unwrap_or_default();
@@ -97,23 +100,28 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
             .expect("Failed to execute editor");
         exit(0);
     }
-
-    
 }
 
 fn open_logic(settings: &Settings) -> () {
     let current_attempt = Attempt::get_current_attempt(settings);
-    
+
     if !download_template(&current_attempt.token, &current_attempt) {
-        println!("Already exists in {}", &current_attempt.path.to_str().unwrap().to_string());
+        println!(
+            "Already exists in {}",
+            &current_attempt.path.to_str().unwrap().to_string()
+        );
     }
 
     if current_attempt.offline {
         open_ide(&current_attempt.path, &settings.editors)
     }
 
-
-    if settings.config.getbool("setup", "move_node_directories").unwrap().unwrap_or(true) {
+    if settings
+        .config
+        .getbool("setup", "move_node_directories")
+        .unwrap()
+        .unwrap_or(true)
+    {
         verify_logic()
     }
 
@@ -127,7 +135,10 @@ fn install_logic() {
 }
 
 fn grade_logic(settings: &Settings, arg: String) {
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let token = settings
+        .config
+        .get("auth", "token")
+        .unwrap_or("".to_string());
     let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
     let response = io::request("GET", url_arg, &token, None);
 
@@ -141,22 +152,36 @@ fn grade_logic(settings: &Settings, arg: String) {
 
     let attempt = &attempts[0];
 
-    let out_dir = files::get_lms_dir().join("grading").join(attempt.get("spec").unwrap().as_str().unwrap().to_string().replace(":", "~"));
+    let out_dir = files::get_lms_dir().join("grading").join(
+        attempt
+            .get("spec")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+            .replace(":", "~"),
+    );
 
     if Path::exists(&out_dir) {
         if files::is_folder_empty(&out_dir).unwrap() {
             match fs::remove_dir_all(&out_dir) {
-                Ok(_) => {},
-                Err(err) => eprintln!("Cant remove directory because: {}", err)
+                Ok(_) => {}
+                Err(err) => eprintln!("Cant remove directory because: {}", err),
             }
         }
     }
-   
+
     if Path::exists(&out_dir) {
-        eprintln!("Submission already exists in {}", out_dir.to_str().unwrap().to_string())
+        eprintln!(
+            "Submission already exists in {}",
+            out_dir.to_str().unwrap().to_string()
+        )
     } else {
         let _ = fs::create_dir_all(&out_dir);
-        let url = format!("/api/attempts/{}/submission", attempt.get("spec").unwrap().as_str().unwrap().to_string());
+        let url = format!(
+            "/api/attempts/{}/submission",
+            attempt.get("spec").unwrap().as_str().unwrap().to_string()
+        );
         io::download_tgz(url, &token, &out_dir);
         println!("Downloaded to {}", out_dir.to_str().unwrap().to_string());
     }
@@ -164,26 +189,45 @@ fn grade_logic(settings: &Settings, arg: String) {
     for name in vec!["_node", "_solution", "_template"] {
         let _ = fs::remove_dir_all(&out_dir.join(name));
 
-
         let mut curriculum_dir = PathBuf::new();
         curriculum_dir.push(env::var("HOME").unwrap());
-        curriculum_dir.push(settings.config.get("grade", "curriculum_directory").unwrap_or("curriculum".to_string()));
+        curriculum_dir.push(
+            settings
+                .config
+                .get("grade", "curriculum_directory")
+                .unwrap_or("curriculum".to_string()),
+        );
 
         let mut glob_path = PathBuf::new();
         glob_path.push(&curriculum_dir);
         glob_path.push(&attempt.get("period").unwrap().to_string());
         glob_path.push(&attempt.get("module_id").unwrap().to_string());
-        glob_path.push(format!("[0-9][0-9]-{}", &attempt.get("node_id").unwrap().to_string()));
+        glob_path.push(format!(
+            "[0-9][0-9]-{}",
+            &attempt.get("node_id").unwrap().to_string()
+        ));
 
         let glob_str = glob_path.to_str().expect("Invalid UTF-8 in path");
         if let Ok(mut paths) = glob(&glob_str) {
             match paths.next() {
                 Some(found_node_id) => {
                     let node_id = found_node_id.unwrap();
-                    let _ = symlink(&node_id, out_dir.join(format!("_{}", node_id.to_str().unwrap().to_string())));
+                    let _ = symlink(
+                        &node_id,
+                        out_dir.join(format!("_{}", node_id.to_str().unwrap().to_string())),
+                    );
 
                     for what in vec!["solution", "template"] {
-                        let what_dir = out_dir.join(format!("{}{}", what, attempt.get("variant_id").unwrap().as_str().unwrap().to_string()));
+                        let what_dir = out_dir.join(format!(
+                            "{}{}",
+                            what,
+                            attempt
+                                .get("variant_id")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                                .to_string()
+                        ));
                         if let Ok(metadata) = fs::metadata(&what_dir) {
                             let _ = metadata
                                 .is_dir()
@@ -191,8 +235,8 @@ fn grade_logic(settings: &Settings, arg: String) {
                                 .expect("Failed to create symlink");
                         };
                     }
-                },
-                None => {} 
+                }
+                None => {}
             }
         }
     }
@@ -208,24 +252,36 @@ fn login_logic(mut settings: Settings) {
         .collect();
 
     settings.set("auth".to_string(), "token".to_string(), token.clone());
-    let encoded_host = form_urlencoded::byte_serialize(gethostname().as_encoded_bytes()).collect::<String>();
-    let url = format!("{}/api/authorize?host={}&token={}", crate::BASE_URL.to_string(), encoded_host, &token);
+    let encoded_host =
+        form_urlencoded::byte_serialize(gethostname().as_encoded_bytes()).collect::<String>();
+    let url = format!(
+        "{}/api/authorize?host={}&token={}",
+        crate::BASE_URL.to_string(),
+        encoded_host,
+        &token
+    );
     println!("Go to this URL to authorize lms: {}", url);
     let _ = webbrowser::open(url.as_str());
 }
 
 fn upload_logic(settings: &Settings) {
-
     let current_attempt = Attempt::get_current_attempt(settings);
 
-
     if !Path::exists(&current_attempt.path) {
-        eprintln!("There is no folder: {}", current_attempt.path.to_str().unwrap());
+        eprintln!(
+            "There is no folder: {}",
+            current_attempt.path.to_str().unwrap()
+        );
         eprintln!("Try `lms template` first");
         exit(1)
     }
-    
-    if settings.config.getbool("custom", "check_todo").unwrap().unwrap_or(true) {
+
+    if settings
+        .config
+        .getbool("custom", "check_todo")
+        .unwrap()
+        .unwrap_or(true)
+    {
         if let Some(file_todo) = get_todo(&current_attempt.path) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
@@ -234,17 +290,14 @@ fn upload_logic(settings: &Settings) {
                 for (idx, line) in todos {
                     println!("  {} -> {}", idx, line)
                 }
-
             }
 
-            if utils::prompt_yes_no("\nYou still have some TODO's in your code do you want to fix them") {
+            if prompt::yes_no("\nYou still have some TODO's in your code do you want to fix them") {
                 println!("Upload cancelled");
                 exit(0)
             }
         }
-
     }
-
 
     let cmd = if cfg!(target_os = "macos") {
         "gtar"
@@ -252,14 +305,12 @@ fn upload_logic(settings: &Settings) {
         "tar"
     };
 
-
-
     if files::is_folder_empty(&current_attempt.path).unwrap() {
-        if !utils::prompt_yes_no("This folder is currently empty are you sure you want to upload?") {
+        if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
             exit(0)
         }
     }
-    
+
     let mut tar = Command::new(cmd);
     tar.arg("czC")
         .arg(current_attempt.path.to_str().unwrap().to_string())
@@ -281,7 +332,10 @@ fn upload_logic(settings: &Settings) {
         }
     };
 
-    let url = format!("/api/attempts/{}/submission", current_attempt.id.to_string());
+    let url = format!(
+        "/api/attempts/{}/submission",
+        current_attempt.id.to_string()
+    );
 
     match io::request("POST", url, &current_attempt.token, Some(data.stdout)) {
         Some(res) => {
@@ -292,15 +346,17 @@ fn upload_logic(settings: &Settings) {
                     if let Some(upload_bytes) = transferred.as_u64() {
                         let upload_kb = upload_bytes / 1024;
                         println!("Uploaded complete: {}kb transferred", upload_kb);
-                        println!("Please remember that you still need to submit in the web interface")
+                        println!(
+                            "Please remember that you still need to submit in the web interface"
+                        )
                     }
-                },
+                }
                 None => {
                     eprintln!("Error getting transferred value");
                     exit(1)
                 }
             }
-        },
+        }
         None => {
             eprintln!("Failed to upload attempt");
             exit(1)
@@ -308,12 +364,14 @@ fn upload_logic(settings: &Settings) {
     }
 }
 
-
 fn download_logic(settings: &Settings, arg: String) {
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let token = settings
+        .config
+        .get("auth", "token")
+        .unwrap_or("".to_string());
 
     if !arg.eq("all") {
-        let _  = download_attempt(&arg, &token);
+        let _ = download_attempt(&arg, &token);
     }
 
     let response = io::request("GET", "/api/node-paths".to_string(), &token, None);
@@ -327,32 +385,42 @@ fn download_logic(settings: &Settings, arg: String) {
 
     let mut local_dirs: HashSet<String> = HashSet::new();
     let target_dir = files::get_lms_dir().join("*/*");
-    for path in  glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
+    for path in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
         match path {
             Ok(path) => {
-                local_dirs.insert(path.as_path().file_name().unwrap().to_str().unwrap().to_string());
-            },
+                local_dirs.insert(
+                    path.as_path()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string(),
+                );
+            }
             Err(_) => {}
         }
     }
 
-    attempts.as_object().unwrap().iter().for_each(|(assignment, _)| {
-        let mut ignore = false;
+    attempts
+        .as_object()
+        .unwrap()
+        .iter()
+        .for_each(|(assignment, _)| {
+            let mut ignore = false;
 
-        for exclude in DOWNLOAD_EXCLUDE {
-            if assignment.contains(exclude) {
-                ignore = true;
-                break
+            for exclude in DOWNLOAD_EXCLUDE {
+                if assignment.contains(exclude) {
+                    ignore = true;
+                    break;
+                }
             }
-        }
 
-        if !local_dirs.contains(assignment) && !ignore {
-            download_attempt(&assignment.to_string(), &token);
-            sleep(Duration::from_millis(500));
-        }
-    })
+            if !local_dirs.contains(assignment) && !ignore {
+                download_attempt(&assignment.to_string(), &token);
+                sleep(Duration::from_millis(500));
+            }
+        })
 }
-
 
 fn download_attempt(assignment: &String, token: &String) -> bool {
     let url_arg = format!("/api/attempts/@{}", assignment.replace("~", ":"));
@@ -362,7 +430,7 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
         Some(data) => io::response_to_json(data),
         None => {
             eprintln!("No attempt found: {}", assignment);
-            return false
+            return false;
         }
     };
 
@@ -374,46 +442,55 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
 
             match select_attempt.get("path") {
                 Some(att) => {
-
                     out_dir.push(att.as_str().unwrap());
 
                     if Path::exists(&out_dir) {
-                        eprintln!("Output directory {} already exists", out_dir.to_str().unwrap());
-                        return false
+                        eprintln!(
+                            "Output directory {} already exists",
+                            out_dir.to_str().unwrap()
+                        );
+                        return false;
                     }
 
                     let select_attempts = select_attempt.get("spec").unwrap().clone();
 
                     let _ = fs::create_dir_all(&out_dir);
 
-                    let url = format!("/api/attempts/{}/submission", select_attempts.as_str().unwrap());
+                    let url = format!(
+                        "/api/attempts/{}/submission",
+                        select_attempts.as_str().unwrap()
+                    );
                     io::download_tgz(url, &token, &out_dir);
-                    println!("Downloaded: {} at: {}", assignment, &out_dir.to_str().unwrap());
+                    println!(
+                        "Downloaded: {} at: {}",
+                        assignment,
+                        &out_dir.to_str().unwrap()
+                    );
                 }
-                None => return false 
+                None => return false,
             }
-
-        },
+        }
 
         None => {
             eprintln!("Cant find attempt: {}", assignment);
-            return false
+            return false;
         }
     }
-    return true
+    return true;
 }
 
 fn template_logic(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
 
-
-   if !download_template(&current_attempt.token, &current_attempt) {
-        let error_message = format!("Output directory {} already exists", current_attempt.path.to_str().unwrap().to_string());
+    if !download_template(&current_attempt.token, &current_attempt) {
+        let error_message = format!(
+            "Output directory {} already exists",
+            current_attempt.path.to_str().unwrap().to_string()
+        );
         eprintln!("{}", error_message);
         exit(1)
     }
 }
-
 
 fn download_template(token: &String, attempt: &Attempt) -> bool {
     if !Path::exists(&attempt.path) {
@@ -421,13 +498,13 @@ fn download_template(token: &String, attempt: &Attempt) -> bool {
         println!("Created {}", &attempt.path.to_str().unwrap());
     } else {
         if !files::is_folder_empty(&attempt.path).unwrap() {
-            return false
+            return false;
         }
     }
 
     if attempt.offline {
         println!("No connection to server");
-        return false
+        return false;
     }
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
@@ -444,20 +521,20 @@ fn verify_logic() {
 fn move_node_directories() -> bool {
     let lms_dir = files::get_lms_dir();
 
-    let correct_paths_json = match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
-        Some(data) => io::response_to_json(data),
-        None => {
-            eprintln!("Cant convert paths to json");
-            exit(1)
-        }
-    };
+    let correct_paths_json =
+        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
+            Some(data) => io::response_to_json(data),
+            None => {
+                eprintln!("Cant convert paths to json");
+                exit(1)
+            }
+        };
 
     let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
-    
+
     let target_dir = lms_dir.join("*/*");
     // Get all directories in lms [python, pwa, static-web, ..etc]
     for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
-
         let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
 
         // Get all chilled directorys in lms [css, vars, svelte, ..etc]
@@ -466,24 +543,22 @@ fn move_node_directories() -> bool {
                 let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
 
                 if local_path_current.eq("grading") {
-                    continue
+                    continue;
                 }
 
                 // TODO: Refactor this
                 if let correct_path_object = Some(&correct_paths_json) {
                     let pressent_node_id = correct_paths_json.as_object().unwrap().get(&node_id);
                     if pressent_node_id.is_some() {
-                        if let correct_path = pressent_node_id.unwrap().as_str().unwrap().to_string() {
-
+                        if let correct_path =
+                            pressent_node_id.unwrap().as_str().unwrap().to_string()
+                        {
                             if !correct_path.eq(local_path_current.to_str().unwrap()) {
                                 let local_path = lms_dir.join(local_path_current).join(&node_id);
                                 let valid_path = lms_dir.join(correct_path).join(&node_id);
 
                                 if !Path::exists(&valid_path) {
-                                    misplaced.insert(
-                                        local_path,
-                                        valid_path
-                                    );
+                                    misplaced.insert(local_path, valid_path);
                                 }
                             }
                         }
@@ -496,11 +571,15 @@ fn move_node_directories() -> bool {
     if misplaced.len() != 0 {
         println!("These directories are not in their recommended locations:");
         for (local_directory, valid_directory) in &misplaced {
-            println!("  {} -> {}", local_directory.to_str().unwrap().to_string(), valid_directory.to_str().unwrap().to_string());
-            let permission = utils::prompt_yes_no("Would you like to move them?");
+            println!(
+                "  {} -> {}",
+                local_directory.to_str().unwrap().to_string(),
+                valid_directory.to_str().unwrap().to_string()
+            );
+            let permission = prompt::yes_no("Would you like to move them?");
 
             if !permission {
-                return false 
+                return false;
             }
             let _ = fs::rename(local_directory, valid_directory);
         }
@@ -509,32 +588,28 @@ fn move_node_directories() -> bool {
 }
 
 fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
-    
     let mut file_todo = HashMap::new();
 
-    for files in  glob(project_folder.join("*").to_str().unwrap()).unwrap() {
+    for files in glob(project_folder.join("*").to_str().unwrap()).unwrap() {
         if let Ok(file) = files {
-
             if !file.is_file() {
-                continue
-            } 
+                continue;
+            }
 
             match file.extension() {
                 Some(ext) => {
                     if !SCAN_FILE_TYPE.contains(&ext.to_str().unwrap()) {
-                        continue
+                        continue;
                     }
-                },
+                }
                 None => continue,
             }
-
 
             let lines: Vec<String> = fs::read_to_string(&file)
                 .unwrap()
                 .lines()
                 .map(String::from)
                 .collect();
-
 
             let mut todo_dict = HashMap::new();
             lines.iter().enumerate().rev().for_each(|(idx, line)| {
@@ -544,16 +619,17 @@ fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, S
             });
 
             if !todo_dict.is_empty() {
-                file_todo.insert(file.file_name().unwrap().to_str().unwrap().to_string(), todo_dict);
+                file_todo.insert(
+                    file.file_name().unwrap().to_str().unwrap().to_string(),
+                    todo_dict,
+                );
             }
         }
     }
 
     if file_todo.len() != 0 {
-        return Some(file_todo)
+        return Some(file_todo);
     }
 
     None
-
 }
-

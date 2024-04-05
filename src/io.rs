@@ -1,6 +1,6 @@
 use serde_json::Value;
 use std::path::PathBuf;
-use std::io::Write;
+use std::io::{self, Write};
 use std::process::{Command, Stdio, exit};
 use reqwest::{
     blocking::{Response, Client},
@@ -52,7 +52,19 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
                 StatusCode::IM_A_TEAPOT => {
                     // TODO: Update client (optional)
                     println!("Client needs to be updated");
-                    exit(1);
+
+                    // let output = Command::new("wget")
+                    // .args(&["-qO-", "https://gitlab.com/gj-535479/lms-rust-cli/-/raw/nightly/install"])
+                    // .output();
+                                    
+                    // let python_script = String::from_utf8(output.unwrap().stdout);
+                    
+                    // let _ = Command::new("python")
+                    //     .arg("-c")
+                    //     .arg(&python_script.unwrap())
+                    //     .output();
+                    
+                    exit(1)
                 }
                 _ => {
                     eprintln!("Server status not handled: {:?}", res.status());

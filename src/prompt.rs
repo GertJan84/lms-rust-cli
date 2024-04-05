@@ -1,7 +1,7 @@
 use std::io::Write;
 
 
-pub fn prompt_yes_no(message: &str) -> bool {
+pub fn yes_no(message: &str) -> bool {
     loop {
         print!("{} [Y, n]: ", message);
         std::io::stdout().flush().unwrap();

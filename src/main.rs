@@ -2,6 +2,7 @@ extern crate glob;
 
 use std::env;
 use clap::{Command, Arg};
+use once_cell::sync::Lazy;
 
 mod settings;
 mod arguments;
@@ -9,16 +10,11 @@ mod utils;
 mod files;
 mod io;
 
-#[macro_use]
-extern crate lazy_static;
-
-
 pub const CLI_VERSION: &'static str = "15";
 
-lazy_static! {
-    pub static ref BASE_URL: String = env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string());    
-}
-
+pub static BASE_URL: Lazy<String> = Lazy::new(|| {
+    env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string())
+});
 
 fn main() {
     let cmd = Command::new("lms")

@@ -541,7 +541,7 @@ dependencies = [
  "configparser",
  "gethostname",
  "glob",
- "lazy_static",
+ "once_cell",
  "rand",
  "reqwest",
  "serde_json",

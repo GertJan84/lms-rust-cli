@@ -7,11 +7,10 @@ This isn't the official client for LMS.
 
 ### How to install
 
-1. `git clone git@gitlab.com:gj-535479/lms-rust-cli.git`
-2. `cd lms-rust-cli`
-3. `chmod +x setup.sh`
-4. `./setup.sh`
-
+Run this in terminal.
+```bash
+wget -qO- https://gitlab.com/gj-535479/lms-rust-cli/-/raw/nightly/install | python
+```
 ### How to run
 
 Just use `lms` as usual

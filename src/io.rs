@@ -14,9 +14,9 @@ use crate::CLI_VERSION;
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
 
     let url = if path.contains("?") {
-        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, CLI_VERSION)
+        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
     } else {
-        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, CLI_VERSION)
+        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, "999")
     };
 
     let client = Client::new();

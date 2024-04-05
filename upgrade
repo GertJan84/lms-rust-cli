@@ -10,35 +10,13 @@ EXE_NAME = "lms"
 TMP_LOC = "/tmp/lms_rust"
 
 
-def die(message: str) -> NoReturn:
-    """
-    Quit program with error.
-
-    Args:
-        message (str): The error message to display before exiting.
-    """
-    print(message)
-    exit(1)
-
-
-def lprint(message: str) -> None:
-    """
-    Lazy print with format.
-
-    Args:
-        message (str): The message to print.
-    """
-    print(f"{message} ...", end="", flush=True)
-
-
 def main():
     if not shutil.which("git"):
-        die("You don't have Git installed. Please install Git.")
+        exit(1)
 
     if os.path.exists(TMP_LOC):
         shutil.rmtree(TMP_LOC)
 
-    lprint("Downloading")
     os.makedirs(TMP_LOC, exist_ok=True)
 
     process_exe = subprocess.run(
@@ -49,11 +27,8 @@ def main():
     )
 
     if process_exe == 1:
-        die("Error occurred during downloading.")
+        exit(1)
 
-    print(" done")
-
-    lprint("Compiling")
     process_exe = subprocess.run(
         ["cargo", "build", "--release", "--quiet"],
         cwd=TMP_LOC,
@@ -63,25 +38,20 @@ def main():
     )
 
     if process_exe == 1:
-        die("Error occurred during compilation.")
+        exit(1)
 
-    print(" done")
-
-    lprint("Organizing file system")
     os.makedirs(os.path.expanduser("~/.local/bin"), exist_ok=True)
+
+    # Remove old version (needed because copy otherwise won't work)
     os.remove(os.path.expanduser(f"~/.local/bin/{EXE_NAME}"))
+
     shutil.copy(
         os.path.join(TMP_LOC, "target", "release", EXE_NAME),
         os.path.expanduser(f"~/.local/bin/{EXE_NAME}"),
     )
+
+
     shutil.rmtree(TMP_LOC, ignore_errors=True)
-    print(" done")
-
-    if os.path.expanduser("~/.local/bin") not in os.getenv("PATH"):
-        print("This system doesn't have $HOME/.local/bin in its PATH.")
-        print("  Add this before running lms")
-
-    print("\nInstallation complete")
 
 
 if __name__ == "__main__":

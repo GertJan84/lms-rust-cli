@@ -50,20 +50,15 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
 
                 StatusCode::IM_A_TEAPOT => {
-                    // TODO: Update client (optional)
                     println!("Client needs to be updated");
 
-                    // let output = Command::new("wget")
-                    // .args(&["-qO-", "https://gitlab.com/gj-535479/lms-rust-cli/-/raw/nightly/install"])
-                    // .output();
-                                    
-                    // let python_script = String::from_utf8(output.unwrap().stdout);
-                    
-                    // let _ = Command::new("python")
-                    //     .arg("-c")
-                    //     .arg(&python_script.unwrap())
-                    //     .output();
-                    
+                    let _ = Command::new("sh")
+                        .arg("-c")
+                        .arg("wget -qO- https://gitlab.com/gj-535479/lms-rust-cli/-/raw/main/upgrade | python")
+                        .output()
+                        .expect("Failed to execute command");
+
+                    println!("Client upgraded");
                     exit(1)
                 }
                 _ => {

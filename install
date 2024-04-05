@@ -60,22 +60,30 @@ def main():
 
     lprint("Downloading")
     os.makedirs(TMP_LOC, exist_ok=True)
-    subprocess.run(
+    process_exe =subprocess.run(
         ["git", "clone", REPO_URL, TMP_LOC],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        check=True,
+        check=False,
     )
+
+    if process_exe == 1:
+        die("Error occurred during downloading.")
+
     print(" done")
 
     lprint("Compiling")
-    subprocess.run(
+    process_exe = subprocess.run(
         ["cargo", "build", "--release", "--quiet"],
         cwd=TMP_LOC,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        check=True,
+        check=False,
     )
+
+    if process_exe == 1:
+        die("Error occurred during compilation.")
+
     print(" done")
 
     lprint("Organizing file system")

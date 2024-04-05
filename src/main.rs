@@ -66,6 +66,10 @@ fn main() {
                         .required(true)
                 )
             )
+        .subcommand(Command::new("folder")
+            .about("Get the current working assignment path")
+        )
+
         .get_matches();
 
     match cmd.subcommand() {
@@ -79,6 +83,7 @@ fn main() {
                 ("template", _) => arguments::execute("template", "".to_string()),
                 ("download", arg) => arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()),
                 ("grade", arg) => arguments::execute("grade", arg.get_one::<String>("short_name").unwrap().to_string()),
+                ("folder", _) => arguments::execute("folder", "".to_string()),
                 _ => eprintln!("Invalid command")
             }
         },

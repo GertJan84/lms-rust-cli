@@ -1,13 +1,6 @@
 use glob::glob;
 use std::{
-    process::{Command, exit, Stdio}, 
-    thread::sleep,
-    time::Duration,
-    collections::{HashSet, HashMap},
-    path::{Path, PathBuf},
-    os::unix::fs::symlink,
-    fs,
-    env
+    collections::{HashMap, HashSet}, env, fs, io::{stdout, Write}, os::unix::fs::symlink, path::{Path, PathBuf}, process::{exit, Command, Stdio}, thread::sleep, time::Duration
 };
 use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
@@ -48,11 +41,21 @@ pub fn execute(command: &str, arg: String) {
         "install" => install_logic(),
         "verify" => verify_logic(),
         "login"=> login_logic(settings),
+        "folder"=> get_folder(&settings),
         _ => {
             eprintln!("invalid command {}", command);
             exit(1)
         }
     }
+}
+
+fn get_folder(settings: &Settings) {
+    // get current assignment directory and STDout pipe it
+    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
+    let current_attempt = get_current_attempt(token.clone());
+    let path_str = current_attempt.path.to_str().unwrap_or("");
+    let _ = std::io::stdout().write_all(path_str.as_bytes());
+    exit(1)
 }
 
 fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {

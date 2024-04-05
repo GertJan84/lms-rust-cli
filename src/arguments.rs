@@ -6,29 +6,13 @@ use rand::{Rng, distributions::Alphanumeric};
 use gethostname::gethostname;
 use url::form_urlencoded;
 use webbrowser;
-use crate::{settings::Settings, utils, files, io};
+use crate::{attempt::{self, Attempt}, files, io, settings::Settings, utils};
 
 const AUTH_TOKEN_LENGTH: u8 = 69;
 const SCAN_FILE_TYPE: [&str; 7] = ["sql", "rs", "py", "js", "css", "html", "svelte"];
 const DOWNLOAD_EXCLUDE: [&str; 3] = ["exam", "project", "graduation"];
 
-struct Attempt {
-    path: PathBuf,
-    spec: String,
-    id: String,
-    offline: bool
-}
 
-impl Attempt {
-    pub fn new(path: PathBuf, spec: String, id: String, offline: bool) -> Self {
-        Self {
-            path,
-            spec,
-            id,
-            offline
-        }
-    }
-}
 
 pub fn execute(command: &str, arg: String) {
     let settings = Settings::new();
@@ -49,10 +33,12 @@ pub fn execute(command: &str, arg: String) {
     }
 }
 
+
+
 fn get_folder(settings: &Settings) {
     // get current assignment directory and STDout pipe it
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let current_attempt = get_current_attempt(token.clone());
+    let current_attempt = Attempt::get_current_attempt(settings);
+
     let path_str = current_attempt.path.to_str().unwrap_or("");
     let _ = std::io::stdout().write_all(path_str.as_bytes());
     exit(1)
@@ -116,10 +102,9 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
 }
 
 fn open_logic(settings: &Settings) -> () {
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let current_attempt = get_current_attempt(token.clone());
+    let current_attempt = Attempt::get_current_attempt(settings);
     
-    if !download_template(token, &current_attempt) {
+    if !download_template(&current_attempt.token, &current_attempt) {
         println!("Already exists in {}", &current_attempt.path.to_str().unwrap().to_string());
     }
 
@@ -231,8 +216,8 @@ fn login_logic(mut settings: Settings) {
 
 fn upload_logic(settings: &Settings) {
 
-    let token = settings.config.get("auth", "token").unwrap();
-    let current_attempt = get_current_attempt(token.clone());
+    let current_attempt = Attempt::get_current_attempt(settings);
+
 
     if !Path::exists(&current_attempt.path) {
         eprintln!("There is no folder: {}", current_attempt.path.to_str().unwrap());
@@ -298,7 +283,7 @@ fn upload_logic(settings: &Settings) {
 
     let url = format!("/api/attempts/{}/submission", current_attempt.id.to_string());
 
-    match io::request("POST", url, &token, Some(data.stdout)) {
+    match io::request("POST", url, &current_attempt.token, Some(data.stdout)) {
         Some(res) => {
             let json_res: serde_json::Value = io::response_to_json(res);
 
@@ -419,10 +404,10 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
 }
 
 fn template_logic(settings: &Settings) {
-    let token = settings.config.get("auth", "token").unwrap_or("".to_string());
-    let current_attempt = get_current_attempt(token.clone());
+    let current_attempt = Attempt::get_current_attempt(settings);
 
-   if !download_template(token, &current_attempt) {
+
+   if !download_template(&current_attempt.token, &current_attempt) {
         let error_message = format!("Output directory {} already exists", current_attempt.path.to_str().unwrap().to_string());
         eprintln!("{}", error_message);
         exit(1)
@@ -430,60 +415,7 @@ fn template_logic(settings: &Settings) {
 }
 
 
-fn get_current_attempt(token: String) -> Attempt {
-    let mut lms_dir = files::get_lms_dir();
-
-    let mut cache = lms_dir.clone();
-    cache.push(".cache");
-
-    let res = io::request("GET", "/api/attempts/current".to_string(), &token, None);
-
-    if res.is_none() {
-        if Path::exists(&cache) {
-            let cache_location = match fs::read_to_string(&cache) {
-                Ok(cache_content) => cache_content.to_string(),
-                Err(_) => {
-                    eprintln!("No cached assignment");
-                    exit(1)
-                }
-            };
-            let mut content = cache_location.split_whitespace();
-            if let (Some(path), Some(spec), Some(id)) = (content.next(), content.next(), content.next()) {
-                return Attempt::new(path.into(), spec.to_string(), id.to_string(), true)
-            } 
-            let _ = fs::remove_file(&cache);
-        } 
-        eprintln!("No cache file");
-        exit(1)
-    }
-
-    let online_attempt = io::response_to_json(res.unwrap());
-    let assignment_path = &online_attempt;
-
-    if assignment_path.is_null() {
-        println!("You currently don't have an assignment open");  
-        exit(0)
-    }
-
-    let relative_path = &assignment_path.get("path").unwrap().as_str().unwrap();
-
-    let id = &assignment_path.get("attempt_id").unwrap().as_number().unwrap();
-    let spec = &assignment_path.get("spec").unwrap().as_str().unwrap();
-
-    lms_dir.push(relative_path);
-    let cache_value = format!("{} {} {}", &lms_dir.to_str().unwrap(), spec, &id);
-
-
-    match fs::write(&cache, cache_value) {
-        Ok(_) => {},
-        Err(err) => eprintln!("Can't write to cache because: {}", err)
-    }
-
-    Attempt::new(lms_dir, spec.to_string(), id.to_string(), false)
-
-}
-
-fn download_template(token: String, attempt: &Attempt) -> bool {
+fn download_template(token: &String, attempt: &Attempt) -> bool {
     if !Path::exists(&attempt.path) {
         let _ = fs::create_dir_all(&attempt.path);
         println!("Created {}", &attempt.path.to_str().unwrap());

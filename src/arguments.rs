@@ -55,8 +55,8 @@ pub fn execute(command: &str, arg: String) {
     }
 }
 
-fn open_ide(current_attempt: &Attempt, editors: &Vec<String>) -> () {
-    if let Err(err) = env::set_current_dir(&current_attempt.path) {
+fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
+    if let Err(err) = env::set_current_dir(&path) {
         eprintln!("{}", err);
         return;
     }
@@ -121,7 +121,7 @@ fn open_logic(settings: &Settings) -> () {
     }
 
     if current_attempt.offline {
-        open_ide(&current_attempt, &settings.editors)
+        open_ide(&current_attempt.path, &settings.editors)
     }
 
 
@@ -129,7 +129,7 @@ fn open_logic(settings: &Settings) -> () {
         verify_logic()
     }
 
-    open_ide(&current_attempt, &settings.editors)
+    open_ide(&current_attempt.path, &settings.editors)
 }
 
 fn install_logic() {
@@ -208,6 +208,8 @@ fn grade_logic(settings: &Settings, arg: String) {
             }
         }
     }
+
+    open_ide(&out_dir, &settings.editors)
 }
 
 fn login_logic(mut settings: Settings) {

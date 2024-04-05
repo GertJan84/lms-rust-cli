@@ -9,7 +9,7 @@ This isn't the official client for LMS.
 
 1. `git clone git@gitlab.com:gj-535479/lms-rust-cli.git`
 2. `cd lms-rust-cli`
-3. `chmod +rwx setup.sh`
+3. `chmod +x setup.sh`
 4. `./setup.sh`
 
 ### How to run

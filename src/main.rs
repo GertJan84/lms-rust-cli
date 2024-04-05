@@ -19,7 +19,7 @@ fn main() {
     let cmd = Command::new("lms")
         .bin_name("lms")
         .about("Lms cli interface")
-        .version(CLI_VERSION)
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(

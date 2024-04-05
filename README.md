@@ -22,6 +22,5 @@ This isn't the official client for lms.
  - [X] Check for todos in your code before upload for "sql", "rs", "py", "js", "css", "html", "svelte"
  - [ ] Add set command for config chages 
  - [ ] Add get command to verify config changes 
- - [ ] Add lms check to check TODO in code
 
 Avalible for `arm` and `x86` systems

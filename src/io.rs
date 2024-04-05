@@ -7,14 +7,16 @@ use reqwest::{
     StatusCode
 };
 
+use crate::CLI_VERSION;
+
 
 
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
 
     let url = if path.contains("?") {
-        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
+        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, CLI_VERSION)
     } else {
-        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, "999")
+        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, CLI_VERSION)
     };
 
     let client = Client::new();

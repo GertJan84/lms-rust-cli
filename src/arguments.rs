@@ -177,12 +177,12 @@ fn grade_logic(settings: &Settings, arg: String) {
         let _ = fs::remove_dir_all(&out_dir.join(name));
 
 
-        let mut curruculum_dir = PathBuf::new();
-        curruculum_dir.push(env::var("HOME").unwrap());
-        curruculum_dir.push(settings.config.get("grade", "curriculum_directory").unwrap_or("curriculum".to_string()));
+        let mut curriculum_dir = PathBuf::new();
+        curriculum_dir.push(env::var("HOME").unwrap());
+        curriculum_dir.push(settings.config.get("grade", "curriculum_directory").unwrap_or("curriculum".to_string()));
 
         let mut glob_path = PathBuf::new();
-        glob_path.push(&curruculum_dir);
+        glob_path.push(&curriculum_dir);
         glob_path.push(&attempt.get("period").unwrap().to_string());
         glob_path.push(&attempt.get("module_id").unwrap().to_string());
         glob_path.push(format!("[0-9][0-9]-{}", &attempt.get("node_id").unwrap().to_string()));

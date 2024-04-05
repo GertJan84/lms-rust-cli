@@ -6,6 +6,8 @@ use clap::{Command, Arg};
 mod settings;
 mod arguments;
 mod utils;
+mod files;
+mod io;
 
 #[macro_use]
 extern crate lazy_static;

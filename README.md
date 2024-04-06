@@ -49,5 +49,5 @@ enabled=false
 
 [custom]
 editor=custom_script
-todo=true
+check_todo=true
 ```

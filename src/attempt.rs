@@ -30,7 +30,7 @@ impl Attempt {
         let mut cache = lms_dir.clone();
         cache.push(".cache");
     
-        let res = io::request("GET", "/api/attempts/current".to_string(), &token, None);
+        let res = io::request("GET", "/api/attempts/current".to_string(), &token, None, 1);
     
         if res.is_none() {
             if Path::exists(&cache) {

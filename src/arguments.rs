@@ -27,7 +27,7 @@ pub fn execute(command: &str, arg: String) {
         "upload" => upload_logic(&settings),
         "download" => download_logic(&settings, arg),
         "template" => template_logic(&settings),
-        "install" => install_logic(),
+        "update" => update_logic(),
         "verify" => verify_logic(),
         "login" => login_logic(settings),
         "show" => show::show(&settings, arg),
@@ -72,17 +72,8 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
             args.push(".");
         }
 
-        // Check if the editor is available in the system's PATH
-        let editor_available = Command::new("which")
-            .arg(editor)
-            .stderr(Stdio::null())
-            .stdout(Stdio::null())
-            .status()
-            .expect("Can't find which")
-            .success();
-
         // Skip to the next editor if the current one is not available
-        if !editor_available {
+        if !io::is_installed(editor_name) {
             continue;
         }
 
@@ -120,9 +111,8 @@ fn open_logic(settings: &Settings) -> () {
     open_ide(&current_attempt.path, &settings.editors)
 }
 
-fn install_logic() {
-    eprintln!("This feature is used for the recommended Visual Studio Code setup.");
-    eprintln!("This feature not implemented.");
+fn update_logic() {
+    io::hanle_upgrade()
 }
 
 fn grade_logic(settings: &Settings, arg: String) {
@@ -131,7 +121,7 @@ fn grade_logic(settings: &Settings, arg: String) {
         .get("auth", "token")
         .unwrap_or("".to_string());
     let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
-    let response = io::request("GET", url_arg, &token, None);
+    let response = io::request("GET", url_arg, &token, None, 1);
 
     let attempts = match response {
         Some(data) => io::response_to_json(data),
@@ -324,7 +314,7 @@ fn upload_logic(settings: &Settings) {
         current_attempt.id.to_string()
     );
 
-    match io::request("POST", url, &current_attempt.token, Some(data.stdout)) {
+    match io::request("POST", url, &current_attempt.token, Some(data.stdout), 1) {
         Some(res) => {
             let json_res: serde_json::Value = io::response_to_json(res);
 
@@ -359,7 +349,7 @@ fn download_logic(settings: &Settings, arg: String) {
         let _ = download_attempt(&arg, &token);
     }
 
-    let response = io::request("GET", "/api/node-paths".to_string(), &token, None);
+    let response = io::request("GET", "/api/node-paths".to_string(), &token, None, 1);
     let attempts = match response {
         Some(data) => io::response_to_json(data),
         None => {
@@ -408,7 +398,7 @@ fn download_logic(settings: &Settings, arg: String) {
 
 fn download_attempt(assignment: &String, token: &String) -> bool {
     let url_arg = format!("/api/attempts/@{}", assignment.replace("~", ":"));
-    let response = io::request("GET", url_arg, token, None);
+    let response = io::request("GET", url_arg, token, None, 1);
 
     let attempts = match response {
         Some(data) => io::response_to_json(data),
@@ -506,7 +496,7 @@ fn move_node_directories() -> bool {
     let lms_dir = files::get_lms_dir();
 
     let correct_paths_json =
-        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
+        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None, 1) {
             Some(data) => io::response_to_json(data),
             None => {
                 eprintln!("Cant convert paths to json");
@@ -617,3 +607,4 @@ fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, S
 
     None
 }
+

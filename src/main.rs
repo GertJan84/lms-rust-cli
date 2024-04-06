@@ -28,8 +28,8 @@ fn main() {
                 .about("Connect to your sd42.nl account")
             )
         .subcommand(
-            Command::new("install")
-                .about("Install or upgrade lms")
+            Command::new("update")
+                .about("Upgrade lms")
             )
         .subcommand(
             Command::new("upload")
@@ -83,7 +83,7 @@ fn main() {
         Some(subcommand) => match subcommand {
             ("open", _) => arguments::execute("open", "".to_string()),
             ("login", _) => arguments::execute("login", "".to_string()),
-            ("install", _) => arguments::execute("install", "".to_string()),
+            ("update", _) => arguments::execute("update", "".to_string()),
             ("upload", _) => arguments::execute("upload", "".to_string()),
             ("verify", _) => arguments::execute("verify", "".to_string()),
             ("template", _) => arguments::execute("template", "".to_string()),

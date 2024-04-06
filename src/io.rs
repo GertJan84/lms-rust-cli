@@ -50,7 +50,7 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
 
                 StatusCode::IM_A_TEAPOT => {
-                    println!("Client needs to be updated");
+                    println!("Client upgrading...");
 
                     let _ = Command::new("sh")
                         .arg("-c")

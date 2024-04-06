@@ -1,11 +1,11 @@
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings};
+use crate::{attempt::Attempt, files, io, prompt, settings::Settings, show};
+use configparser::ini::WriteOptions;
 use gethostname::gethostname;
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
 use std::{
     collections::{HashMap, HashSet},
     env, fs,
-    io::Write,
     os::unix::fs::symlink,
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
@@ -30,22 +30,15 @@ pub fn execute(command: &str, arg: String) {
         "install" => install_logic(),
         "verify" => verify_logic(),
         "login" => login_logic(settings),
-        "folder" => get_folder(&settings),
+        "show" => show::show(&settings, arg),
         _ => {
             eprintln!("invalid command {}", command);
-            exit(1)
         }
     }
-}
 
-fn get_folder(settings: &Settings) {
-    // get current assignment directory and STDout pipe it
-    let current_attempt = Attempt::get_current_attempt(settings);
-
-    let path_str = current_attempt.path.to_str().unwrap_or("");
-    println!("{}", path_str);
     exit(1)
 }
+
 
 fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
     if let Err(err) = env::set_current_dir(&path) {
@@ -93,7 +86,6 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
             continue;
         }
 
-        // Attempt to launch the editor and exit on success
         Command::new(editor_name)
             .args(args)
             .status()
@@ -131,7 +123,6 @@ fn open_logic(settings: &Settings) -> () {
 fn install_logic() {
     eprintln!("This feature is used for the recommended Visual Studio Code setup.");
     eprintln!("This feature not implemented.");
-    exit(0)
 }
 
 fn grade_logic(settings: &Settings, arg: String) {
@@ -145,8 +136,7 @@ fn grade_logic(settings: &Settings, arg: String) {
     let attempts = match response {
         Some(data) => io::response_to_json(data),
         None => {
-            eprintln!("No attempt found");
-            exit(1)
+            return eprintln!("No attempt found");
         }
     };
 
@@ -272,8 +262,7 @@ fn upload_logic(settings: &Settings) {
             "There is no folder: {}",
             current_attempt.path.to_str().unwrap()
         );
-        eprintln!("Try `lms template` first");
-        exit(1)
+        return eprintln!("Try `lms template` first");
     }
 
     if settings
@@ -293,8 +282,7 @@ fn upload_logic(settings: &Settings) {
             }
 
             if prompt::yes_no("\nYou still have some TODO's in your code do you want to fix them") {
-                println!("Upload cancelled");
-                exit(0)
+                return println!("Upload cancelled");
             }
         }
     }
@@ -307,7 +295,7 @@ fn upload_logic(settings: &Settings) {
 
     if files::is_folder_empty(&current_attempt.path).unwrap() {
         if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
-            exit(0)
+            return eprintln!("Cancelled upload");
         }
     }
 
@@ -324,11 +312,10 @@ fn upload_logic(settings: &Settings) {
     let data = match tar.output() {
         Ok(output) => output,
         Err(_) => {
-            eprintln!("Command not found: {}", cmd);
             if cfg!(platform = "macos") {
-                println!("Please install gnu-tar (using brew for instance)")
+                return println!("Please install gnu-tar (using brew for instance)");
             }
-            exit(1)
+            return eprintln!("Command not found: {}", cmd);
         }
     };
 
@@ -352,14 +339,12 @@ fn upload_logic(settings: &Settings) {
                     }
                 }
                 None => {
-                    eprintln!("Error getting transferred value");
-                    exit(1)
+                    return eprintln!("Error getting transferred value");
                 }
             }
         }
         None => {
-            eprintln!("Failed to upload attempt");
-            exit(1)
+            return eprintln!("Failed to upload attempt");
         }
     }
 }
@@ -378,14 +363,13 @@ fn download_logic(settings: &Settings, arg: String) {
     let attempts = match response {
         Some(data) => io::response_to_json(data),
         None => {
-            eprintln!("No attempt found");
-            exit(1)
+            return eprintln!("No attempt found");
         }
     };
 
     let mut local_dirs: HashSet<String> = HashSet::new();
     let target_dir = files::get_lms_dir().join("*/*");
-    for path in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
+    for path in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         match path {
             Ok(path) => {
                 local_dirs.insert(
@@ -487,8 +471,8 @@ fn template_logic(settings: &Settings) {
             "Output directory {} already exists",
             current_attempt.path.to_str().unwrap().to_string()
         );
-        eprintln!("{}", error_message);
-        exit(1)
+
+        return eprintln!("{}", error_message);
     }
 }
 

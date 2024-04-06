@@ -1,7 +1,7 @@
 [package]
 name = "lms"
 author = ["Gert-Jan de Boer", "Tom van het Bolscher"]
-version = "15.0.1"
+version = "15.0.2"
 edition = "2021"
 description = "lms cli client written in rust"
 readme = "README.md"

@@ -9,6 +9,7 @@ mod files;
 mod io;
 mod prompt;
 mod settings;
+mod show;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
@@ -66,8 +67,14 @@ fn main() {
                         .required(true)
                 )
             )
-        .subcommand(Command::new("folder")
-            .about("Get the current working assignment path")
+        .subcommand(Command::new("show")
+            .subcommands([
+                Command::new("path").about("path to current assignment directory"), 
+                Command::new("settings").about("all the settings from this client")
+                ]
+            )
+            .about("Show info from the client")
+            .arg_required_else_help(true)
         )
 
         .get_matches();
@@ -87,7 +94,7 @@ fn main() {
                 "grade",
                 arg.get_one::<String>("short_name").unwrap().to_string(),
             ),
-            ("folder", _) => arguments::execute("folder", "".to_string()),
+            ("show", sub_command) => arguments::execute("show", sub_command.subcommand_name().unwrap().to_string()),
             _ => eprintln!("Invalid command"),
         },
         _ => eprintln!("Error"),

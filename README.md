@@ -44,8 +44,8 @@ in ~/.config/lms.ini
 token=123
 
 [setup]
-move_node_directories=false
-enabled=false
+move_node_directories=true
+enabled=true
 
 [custom]
 editor=custom_script

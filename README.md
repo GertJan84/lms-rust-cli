@@ -34,3 +34,20 @@ Just use `lms` as usual
  - [ ] Add get command to verify config changes 
 
 Available for `arm` and `x86` systems
+
+### Settings example
+
+in ~/.config/lms.ini
+
+```ini
+[auth]
+token=123
+
+[setup]
+move_node_directories=false
+enabled=false
+
+[custom]
+editor=custom_script
+todo=true
+```

@@ -14,7 +14,7 @@ use reqwest::{
 use crate::CLI_VERSION;
 
 
-pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, mut rec_count: u8) -> Option<Response>  {
+pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, recursive: bool) -> Option<Response>  {
 
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
@@ -56,8 +56,8 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
                     println!("Updating client ...");
                     hanle_upgrade();
                     println!("done");
-                    if rec_count != 2 {
-                        return request(method, path,  token, data, 2)
+                    if recursive {
+                        return request(method, path,  token, data, false)
                     }
                     eprintln!("The server doesn't acknowledge the update. And idk why");
                     exit(1)
@@ -103,7 +103,7 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
 }
 
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
-    let res = request("GET", path, token, None, 1);
+    let res = request("GET", path, token, None, true);
 
     let cmd = if cfg!(target_os = "macos") {
         "gtar"

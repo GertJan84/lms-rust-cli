@@ -19,7 +19,7 @@ pub static BASE_URL: Lazy<String> =
 fn main() {
     let cmd = Command::new("lms")
         .bin_name("lms")
-        .about("Lms cli interface")
+        .about("LMS Command Line Interface")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
         .arg_required_else_help(true)

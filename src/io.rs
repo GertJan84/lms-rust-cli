@@ -1,7 +1,11 @@
 use serde_json::Value;
-use std::path::PathBuf;
-use std::io::Write;
-use std::process::{Command, Stdio, exit};
+use std::{
+    path::{Path, PathBuf},
+    io::{self, Write},
+    process::{Command, Stdio, exit},
+    env,
+    fs
+};
 use reqwest::{
     blocking::{Response, Client},
     StatusCode
@@ -10,8 +14,7 @@ use reqwest::{
 use crate::CLI_VERSION;
 
 
-
-pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
+pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, recursive: bool) -> Option<Response>  {
 
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
@@ -23,7 +26,7 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
     let res = match method {
         "GET" => client.get(url).header("authorization", token).send(),
-        "POST" => client.post(url).header("authorization", token).body(data.unwrap()).send(),
+        "POST" => client.post(url).header("authorization", token).body(data.clone().unwrap()).send(),
         _=> {
             eprintln!("Invalid method: {}", method);
             exit(1)
@@ -50,9 +53,14 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
 
                 StatusCode::IM_A_TEAPOT => {
-                    // TODO: Update client (optional)
-                    println!("Client needs to be updated");
-                    exit(1);
+                    println!("Updating client ...");
+                    handle_upgrade();
+                    println!("done");
+                    if recursive {
+                        return request(method, path,  token, data, false)
+                    }
+                    eprintln!("The server doesn't acknowledge the update. And idk why");
+                    exit(1)
                 }
                 _ => {
                     eprintln!("Server status not handled: {:?}", res.status());
@@ -80,8 +88,22 @@ pub fn response_to_json(res: Response) -> Value {
     }
 }
 
+pub fn is_installed(application: &str) -> bool {
+    return execute_command("which", vec![application]);
+}
+
+pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
+    return Command::new(application)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("Can't find which")
+        .success();
+}
+
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
-    let res = request("GET", path, token, None);
+    let res = request("GET", path, token, None, true);
 
     let cmd = if cfg!(target_os = "macos") {
         "gtar"
@@ -123,4 +145,49 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     }
 
     drop(tar_process)
+}
+
+
+pub fn handle_upgrade() {
+
+    let repo_url = env!("CARGO_PKG_REPOSITORY");
+    let exe_name = "lms";
+    let tmp_loc = Path::new("/tmp/lms_rust");
+
+    println!("Current version: {}", env!("CARGO_PKG_VERSION"));
+
+    if !is_installed("git") {
+        eprintln!("Git it not installed");
+        exit(1)
+    }
+
+    if Path::exists(&tmp_loc) {
+        let rm_folder = fs::remove_dir_all(tmp_loc);
+        if rm_folder.is_err() {
+            eprintln!("Can't remove tmp folder: {}", rm_folder.unwrap_err())
+        }
+    }
+
+    let _ = fs::create_dir_all(tmp_loc);
+
+    execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
+    println!("Cloned new version");
+    let _ = env::set_current_dir(tmp_loc);
+    execute_command("cargo", vec!["build", "--release", "--quiet"]);
+    println!("Compiled new version");
+
+    let mut lms_loc = PathBuf::new();
+    lms_loc.push(env::var("HOME").unwrap());
+    lms_loc.push(".local");
+    lms_loc.push("bin");
+
+    if !Path::exists(&lms_loc) {
+        let _ = fs::create_dir_all(&lms_loc);
+    }
+
+    let _ = fs::remove_file(&lms_loc.join(exe_name));
+    let _ = fs::copy(tmp_loc.join("target").join("release").join(exe_name).as_path(), lms_loc.join(exe_name));
+
+    let _ = fs::remove_dir_all(tmp_loc);
+
 }

@@ -7,11 +7,10 @@ This isn't the official client for LMS.
 
 ### How to install
 
-1. `git clone git@gitlab.com:gj-535479/lms-rust-cli.git`
-2. `cd lms-rust-cli`
-3. `chmod +x setup.sh`
-4. `./setup.sh`
-
+Run this in terminal.
+```bash
+wget -qO- https://gitlab.com/gj-535479/lms-rust-cli/-/raw/main/install | python
+```
 ### How to run
 
 Just use `lms` as usual
@@ -35,3 +34,20 @@ Just use `lms` as usual
  - [ ] Add get command to verify config changes 
 
 Available for `arm` and `x86` systems
+
+### Settings example
+
+in ~/.config/lms.ini
+
+```ini
+[auth]
+token=123
+
+[setup]
+move_node_directories=true
+enabled=true
+
+[custom]
+editor=custom_script
+check_todo=true
+```

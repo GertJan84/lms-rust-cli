@@ -54,7 +54,7 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
                 StatusCode::IM_A_TEAPOT => {
                     println!("Updating client ...");
-                    hanle_upgrade();
+                    handle_upgrade();
                     println!("done");
                     if recursive {
                         return request(method, path,  token, data, false)
@@ -148,13 +148,15 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
 }
 
 
-pub fn hanle_upgrade() {
+pub fn handle_upgrade() {
 
-    let repo_url = "https://gitlab.com/gj-535479/lms-rust-cli";
+    let repo_url = env!("CARGO_PKG_REPOSITORY");
     let exe_name = "lms";
     let tmp_loc = Path::new("/tmp/lms_rust");
 
-     if !is_installed("git") {
+    println!("Current version: {}", env!("CARGO_PKG_VERSION"));
+
+    if !is_installed("git") {
         eprintln!("Git it not installed");
         exit(1)
     }
@@ -169,9 +171,11 @@ pub fn hanle_upgrade() {
     let _ = fs::create_dir_all(tmp_loc);
 
     execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
+    println!("Cloned new version");
     let _ = env::set_current_dir(tmp_loc);
     execute_command("cargo", vec!["build", "--release", "--quiet"]);
-    
+    println!("Compiled new version");
+
     let mut lms_loc = PathBuf::new();
     lms_loc.push(env::var("HOME").unwrap());
     lms_loc.push(".local");

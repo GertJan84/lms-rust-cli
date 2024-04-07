@@ -27,7 +27,7 @@ pub fn execute(command: &str, arg: String) {
         "upload" => upload_logic(&settings),
         "download" => download_logic(&settings, arg),
         "template" => template_logic(&settings),
-        "update" => update_logic(),
+        "update" => io::handle_upgrade(),
         "verify" => verify_logic(),
         "login" => login_logic(settings),
         "show" => show::show(&settings, arg),
@@ -111,9 +111,6 @@ fn open_logic(settings: &Settings) -> () {
     open_ide(&current_attempt.path, &settings.editors)
 }
 
-fn update_logic() {
-    io::hanle_upgrade()
-}
 
 fn grade_logic(settings: &Settings, arg: String) {
     let token = settings

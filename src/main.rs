@@ -1,24 +1,25 @@
 extern crate glob;
 
-use std::env;
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 use once_cell::sync::Lazy;
-mod settings;
+use std::env;
 mod arguments;
-mod utils;
+mod attempt;
 mod files;
 mod io;
+mod prompt;
+mod settings;
+mod show;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
-pub static BASE_URL: Lazy<String> = Lazy::new(|| {
-    env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string())
-});
+pub static BASE_URL: Lazy<String> =
+    Lazy::new(|| env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string()));
 
 fn main() {
     let cmd = Command::new("lms")
         .bin_name("lms")
-        .about("Lms cli interface")
+        .about("LMS Command Line Interface")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
         .arg_required_else_help(true)
@@ -27,8 +28,8 @@ fn main() {
                 .about("Connect to your sd42.nl account")
             )
         .subcommand(
-            Command::new("install")
-                .about("Install or upgrade lms")
+            Command::new("update")
+                .about("Upgrade lms")
             )
         .subcommand(
             Command::new("upload")
@@ -66,22 +67,36 @@ fn main() {
                         .required(true)
                 )
             )
+        .subcommand(Command::new("show")
+            .subcommands([
+                Command::new("path").about("path to current assignment directory"), 
+                Command::new("settings").about("all the settings from this client")
+                ]
+            )
+            .about("Show info from the client")
+            .arg_required_else_help(true)
+        )
+
         .get_matches();
 
     match cmd.subcommand() {
-        Some(subcommand) => {
-            match subcommand {
-                ("open", _) => arguments::execute("open", "".to_string()),
-                ("login", _) => arguments::execute("login", "".to_string()),
-                ("install", _) => arguments::execute("install", "".to_string()),
-                ("upload", _) => arguments::execute("upload", "".to_string()),
-                ("verify", _) => arguments::execute("verify", "".to_string()),
-                ("template", _) => arguments::execute("template", "".to_string()),
-                ("download", arg) => arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()),
-                ("grade", arg) => arguments::execute("grade", arg.get_one::<String>("short_name").unwrap().to_string()),
-                _ => eprintln!("Invalid command")
+        Some(subcommand) => match subcommand {
+            ("open", _) => arguments::execute("open", "".to_string()),
+            ("login", _) => arguments::execute("login", "".to_string()),
+            ("update", _) => arguments::execute("update", "".to_string()),
+            ("upload", _) => arguments::execute("upload", "".to_string()),
+            ("verify", _) => arguments::execute("verify", "".to_string()),
+            ("template", _) => arguments::execute("template", "".to_string()),
+            ("download", arg) => {
+                arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string())
             }
+            ("grade", arg) => arguments::execute(
+                "grade",
+                arg.get_one::<String>("short_name").unwrap().to_string(),
+            ),
+            ("show", sub_command) => arguments::execute("show", sub_command.subcommand_name().unwrap().to_string()),
+            _ => eprintln!("Invalid command"),
         },
-        _ => eprintln!("Error")
+        _ => eprintln!("Error"),
     }
 }

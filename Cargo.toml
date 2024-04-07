@@ -1,11 +1,11 @@
 [package]
 name = "lms"
 author = ["Gert-Jan de Boer", "Tom van het Bolscher"]
-version = "15.0.0"
+version = "15.0.2"
 edition = "2021"
 description = "lms cli client written in rust"
 readme = "README.md"
-repository = "https://gitlab.com/gj-535479/lms-rust-cli/"
+repository = "https://gitlab.com/gj-535479/lms-rust-cli"
 
 [dependencies]
 clap = "4.5.1"

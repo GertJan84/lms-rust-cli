@@ -1,4 +1,6 @@
-use std::{env, fs, path::PathBuf};
+use std::{collections::HashMap, env, fs, path::{Path, PathBuf}, process::exit};
+use glob::glob;
+use crate::io;
 
 pub fn get_lms_dir() -> PathBuf {
     let mut lms_dir = PathBuf::new();
@@ -16,4 +18,66 @@ pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
     }
 
     Ok(true)
+}
+
+pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
+    let lms_dir = get_lms_dir();
+
+    let correct_paths_json = match io::request(
+        "GET",
+        "/api/node-paths".to_string(),
+        &"".to_string(),
+        None,
+        true,
+    ) {
+        Some(data) => io::response_to_json(data),
+        None => {
+            eprintln!("Cant convert paths to json");
+            exit(1)
+        }
+    };
+
+    if Some(&correct_paths_json).is_none() {
+        eprintln!("There is nothing in the response");
+        exit(1)
+    }
+
+    let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
+
+    let target_dir = lms_dir.join("*/*");
+    // Get all directories in lms [python, pwa, static-web, ..etc]
+    for dir in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
+        let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
+
+        // Get all chilled directories in lms [css, vars, svelte, ..etc]
+        if let Ok(ref path) = dir {
+            if !path.is_dir() {
+                continue;
+            }
+
+            if local_path_current.eq("grading") {
+                continue;
+            }
+
+            let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
+
+            let present_node_id = correct_paths_json.as_object().unwrap().get(&node_id);
+            if present_node_id.is_none() {
+                continue;
+            }
+
+            match present_node_id.unwrap().as_str().unwrap().to_string() {
+                correct_path if !correct_path.eq(local_path_current.to_str().unwrap()) => {
+                    let local_path = lms_dir.join(local_path_current).join(&node_id);
+                    let valid_path = lms_dir.join(correct_path).join(&node_id);
+
+                    if !Path::exists(&valid_path) {
+                        misplaced.insert(local_path, valid_path);
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    misplaced
 }

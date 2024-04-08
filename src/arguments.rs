@@ -1,5 +1,4 @@
 use crate::{attempt::Attempt, files, io, prompt, settings::Settings, show};
-use configparser::ini::WriteOptions;
 use gethostname::gethostname;
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
@@ -484,61 +483,7 @@ fn download_template(token: &String, attempt: &Attempt) -> bool {
 }
 
 fn verify_logic() {
-    if move_node_directories() {
-        println!("All nodes are in the right place!");
-    }
-}
-
-fn move_node_directories() -> bool {
-    let lms_dir = files::get_lms_dir();
-
-    let correct_paths_json =
-        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None, true) {
-            Some(data) => io::response_to_json(data),
-            None => {
-                eprintln!("Cant convert paths to json");
-                exit(1)
-            }
-        };
-
-    let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
-
-    let target_dir = lms_dir.join("*/*");
-    // Get all directories in lms [python, pwa, static-web, ..etc]
-    for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
-        let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
-
-        // Get all chilled directorys in lms [css, vars, svelte, ..etc]
-        if let Ok(ref path) = dir {
-            if path.is_dir() {
-                let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
-
-                if local_path_current.eq("grading") {
-                    continue;
-                }
-
-                // TODO: Refactor this
-                if let correct_path_object = Some(&correct_paths_json) {
-                    let pressent_node_id = correct_paths_json.as_object().unwrap().get(&node_id);
-                    if pressent_node_id.is_some() {
-                        if let correct_path =
-                            pressent_node_id.unwrap().as_str().unwrap().to_string()
-                        {
-                            if !correct_path.eq(local_path_current.to_str().unwrap()) {
-                                let local_path = lms_dir.join(local_path_current).join(&node_id);
-                                let valid_path = lms_dir.join(correct_path).join(&node_id);
-
-                                if !Path::exists(&valid_path) {
-                                    misplaced.insert(local_path, valid_path);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    let misplaced = files::get_misplaced_nodes();
     if misplaced.len() != 0 {
         println!("These directories are not in their recommended locations:");
         for (local_directory, valid_directory) in &misplaced {
@@ -547,16 +492,19 @@ fn move_node_directories() -> bool {
                 local_directory.to_str().unwrap().to_string(),
                 valid_directory.to_str().unwrap().to_string()
             );
-            let permission = prompt::yes_no("Would you like to move them?");
+        }
 
-            if !permission {
-                return false;
-            }
+        if !prompt::yes_no("Would you like to move them?") {
+            return;
+        }
+
+        // If you want to replace them
+        for (local_directory, valid_directory) in &misplaced {
             let _ = fs::rename(local_directory, valid_directory);
         }
     }
-    true
-}
+    println!("All nodes are in the right place!");
+    }
 
 fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
     let mut file_todo = HashMap::new();

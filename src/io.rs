@@ -162,18 +162,14 @@ pub fn handle_upgrade() {
     }
 
     if Path::exists(&tmp_loc) {
-        let rm_folder = fs::remove_dir_all(tmp_loc);
-        if rm_folder.is_err() {
-            eprintln!("Can't remove tmp folder: {}", rm_folder.unwrap_err())
+        if let Err(err) = fs::remove_dir_all(tmp_loc) {
+            eprintln!("Can't remove tmp folder: {}", err)
         }
     }
 
-    match fs::create_dir_all(tmp_loc) {
-        Ok(_) => {}
-        Err(err) => {
-            eprintln!("A error occurred: {}", err);
-            exit(1)
-        }
+    if let Err(err) = fs::create_dir_all(tmp_loc) {
+        eprintln!("A error occurred: {}", err);
+        exit(1)
     }
 
     execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);

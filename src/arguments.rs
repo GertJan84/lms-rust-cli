@@ -85,29 +85,24 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
 }
 
 fn open_logic(settings: &Settings) -> () {
-    let current_attempt = Attempt::get_current_attempt(settings);
+    let current_attempt = Attempt::get_current_attempt(&settings);
 
     if !download_template(&current_attempt.token, &current_attempt) {
         println!(
             "Already exists in {}",
-            &current_attempt.path.to_str().unwrap().to_string()
+            &current_attempt.get_path_buf().to_str().unwrap().to_string()
         );
     }
 
     if current_attempt.offline {
-        open_ide(&current_attempt.path, &settings.editors)
+        open_ide(&current_attempt.get_path_buf(), &settings.editors)
     }
 
-    if settings
-        .config
-        .getbool("setup", "move_node_directories")
-        .unwrap()
-        .unwrap_or(true)
-    {
-        verify_logic()
-    }
+    // if settings.get_setting("setup", "move_node_directories", true) {
+    //     verify_logic()
+    // }
 
-    open_ide(&current_attempt.path, &settings.editors)
+    open_ide(&current_attempt.get_path_buf(), &settings.editors)
 }
 
 
@@ -242,11 +237,11 @@ fn login_logic(mut settings: Settings) {
 
 fn upload_logic(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
-
-    if !Path::exists(&current_attempt.path) {
+    
+    if !Path::exists(&current_attempt.get_path_buf()) {
         eprintln!(
             "There is no folder: {}",
-            current_attempt.path.to_str().unwrap()
+            current_attempt.get_path_buf().to_str().unwrap()
         );
         return eprintln!("Try `lms template` first");
     }
@@ -257,7 +252,7 @@ fn upload_logic(settings: &Settings) {
         .unwrap()
         .unwrap_or(true)
     {
-        if let Some(file_todo) = get_todo(&current_attempt.path) {
+        if let Some(file_todo) = get_todo(&current_attempt.get_path_buf()) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
                 println!("\n{}: has some TODO's:", file);
@@ -279,7 +274,7 @@ fn upload_logic(settings: &Settings) {
         "tar"
     };
 
-    if files::is_folder_empty(&current_attempt.path).unwrap() {
+    if files::is_folder_empty(&current_attempt.get_path_buf()).unwrap() {
         if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
             return eprintln!("Cancelled upload");
         }
@@ -287,7 +282,7 @@ fn upload_logic(settings: &Settings) {
 
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(current_attempt.path.to_str().unwrap().to_string())
+        .arg(current_attempt.get_path_buf().to_str().unwrap().to_string())
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
@@ -319,9 +314,14 @@ fn upload_logic(settings: &Settings) {
                     if let Some(upload_bytes) = transferred.as_u64() {
                         let upload_kb = upload_bytes / 1024;
                         println!("Uploaded complete: {}kb transferred", upload_kb);
-                        println!(
-                            "Please remember that you still need to submit in the web interface"
-                        )
+
+                        if settings.get_setting("setup", "upload_open_browser", true) {
+                            let _ = webbrowser::open(&current_attempt.get_url());
+                        }
+                        else {
+                            println!("Please remember that you still need to submit in the web interface");
+                        }
+
                     }
                 }
                 None => {
@@ -455,7 +455,7 @@ fn template_logic(settings: &Settings) {
     if !download_template(&current_attempt.token, &current_attempt) {
         let error_message = format!(
             "Output directory {} already exists",
-            current_attempt.path.to_str().unwrap().to_string()
+            current_attempt.get_path_buf().to_str().unwrap().to_string()
         );
 
         return eprintln!("{}", error_message);
@@ -463,11 +463,11 @@ fn template_logic(settings: &Settings) {
 }
 
 fn download_template(token: &String, attempt: &Attempt) -> bool {
-    if !Path::exists(&attempt.path) {
-        let _ = fs::create_dir_all(&attempt.path);
-        println!("Created {}", &attempt.path.to_str().unwrap());
+    if !Path::exists(&attempt.get_path_buf()) {
+        let _ = fs::create_dir_all(&attempt.get_path_buf());
+        println!("Created {}", &attempt.get_path_buf().to_str().unwrap());
     } else {
-        if !files::is_folder_empty(&attempt.path).unwrap() {
+        if !files::is_folder_empty(&attempt.get_path_buf()).unwrap() {
             return false;
         }
     }
@@ -478,7 +478,7 @@ fn download_template(token: &String, attempt: &Attempt) -> bool {
     }
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
-    io::download_tgz(url, &token, &attempt.path);
+    io::download_tgz(url, &token, &attempt.get_path_buf());
     true
 }
 

@@ -46,6 +46,13 @@ impl Settings {
         }
     }
 
+    pub fn get_setting(&self, section: &str, key: &str, default: bool) -> bool {
+        self.config
+            .getbool(section, key)
+            .unwrap()
+            .unwrap_or(default)
+    }
+
     pub fn set(&mut self, category: String, name: String, value: String) {
         self.config.set(&category, &name, Some(value));
         if let Some(path_str) = self.config_path.to_str() {

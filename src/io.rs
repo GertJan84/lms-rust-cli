@@ -11,7 +11,7 @@ use reqwest::{
     StatusCode
 };
 
-use crate::CLI_VERSION;
+// use crate::CLI_VERSION;
 
 
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, recursive: bool) -> Option<Response>  {

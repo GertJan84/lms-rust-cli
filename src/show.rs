@@ -18,7 +18,8 @@ pub fn show(settings: &Settings, arg: String) {
 fn show_path(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
 
-    let path_str = current_attempt.path.to_str().unwrap_or("");
+    let binding = current_attempt.get_path_buf();
+    let path_str = &binding.to_str().unwrap_or("");
     println!("{}", path_str);
 }
 

@@ -51,12 +51,16 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
         match fs::read_to_string(".lms-ide") {
             Ok(lms_ide) => {
                 // Parse lms_ide file to exclude dots and remove white so that "android-studio . " becomes "android-studio"
-                let lms_ide = lms_ide
-                    .split_whitespace()
-                    .filter(|&x| !x.contains("."))
-                    .collect();
+                if io::is_installed(&lms_ide) {
+                    let lms_ide = lms_ide
+                        .split_whitespace()
+                        .filter(|&x| !x.contains("."))
+                        .collect();
 
-                editors.insert(0, lms_ide)
+                    editors.insert(0, lms_ide)
+                } else {
+                    eprintln!("{} is not installed", lms_ide)
+                }
             }
             Err(_) => {}
         }
@@ -500,9 +504,39 @@ fn verify_logic() {
 
         // If you want to replace them
         for (local_directory, valid_directory) in &misplaced {
-            let _ = fs::rename(local_directory, valid_directory);
+
+            if let Some(parent) = valid_directory.parent() {
+                if !Path::exists(parent) {
+                    if let Err(err) = fs::create_dir(parent) {
+                        eprintln!("Faild to create new node directory: {}", err);
+                    }
+                }
+            }
+
+            if let Err(err) = fs::rename(local_directory, valid_directory) {
+                println!("{} -> {}", local_directory.to_str().unwrap(), valid_directory.to_str().unwrap());
+                println!("Can't move folder becuase: {}", err);
+                exit(1);
+            }
         }
     }
+
+    if let Some(empty_dirs) = files::get_empty_lms() {
+        println!("\nThe following folders are empty");
+        for dir in &empty_dirs {
+            println!("  - {}", dir.to_str().unwrap());
+        }
+
+        if prompt::yes_no("\nDo you want to remove them") {
+            for dir in &empty_dirs {
+                if let Err(err) = fs::remove_dir(dir) {
+                    eprintln!("Can't remove folder: {}", err);
+                    exit(1)
+                }
+            }
+        }
+    }
+
     println!("All nodes are in the right place!");
     }
 

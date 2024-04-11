@@ -102,9 +102,9 @@ fn open_logic(settings: &Settings) -> () {
         open_ide(&current_attempt.get_path_buf(), &settings.editors)
     }
 
-    // if settings.get_setting("setup", "move_node_directories", true) {
-    //     verify_logic()
-    // }
+    if settings.get_setting("setup", "move_node_directories", true) {
+        verify_logic()
+    }
 
     open_ide(&current_attempt.get_path_buf(), &settings.editors)
 }

@@ -359,6 +359,7 @@ fn download_logic(settings: &Settings, arg: String) {
 
     let mut local_dirs: HashSet<String> = HashSet::new();
     let target_dir = files::get_lms_dir().join("*/*");
+
     for path in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         match path {
             Ok(path) => {
@@ -376,6 +377,8 @@ fn download_logic(settings: &Settings, arg: String) {
     }
 
     attempts
+        .as_array()
+        .unwrap()[0]
         .as_object()
         .unwrap()
         .iter()

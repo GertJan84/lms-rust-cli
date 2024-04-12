@@ -12,7 +12,6 @@ pub struct Attempt {
     pub spec: String,
     pub id: String,
     pub offline: bool,
-    pub token: String,
 }
 
 impl Attempt {
@@ -22,7 +21,6 @@ impl Attempt {
         spec: String,
         id: String,
         offline: bool,
-        token: String,
     ) -> Self {
         Self {
             node_id,
@@ -30,7 +28,6 @@ impl Attempt {
             spec,
             id,
             offline,
-            token,
         }
     }
 
@@ -52,10 +49,7 @@ impl Attempt {
     }
 
     pub fn get_current_attempt(settings: &Settings) -> Attempt {
-        let token = settings
-            .config
-            .get("auth", "token")
-            .unwrap_or("".to_string());
+        let token = settings.get_token();
 
         let lms_dir = files::get_lms_dir();
 
@@ -65,7 +59,7 @@ impl Attempt {
         let res = io::request("GET", "/api/attempts/current".to_string(), &token, None);
 
         if res.is_none() {
-            return Self::get_offline_attempt(cache, token);
+            return Self::get_offline_attempt(cache);
         }
 
         let online_attempt = io::response_to_json(res.unwrap());
@@ -86,6 +80,7 @@ impl Attempt {
             .unwrap()
             .as_number()
             .unwrap();
+
         let spec = &assignment_path.get("spec").unwrap().as_str().unwrap();
 
         let cache_value = format!("{} {} {}", &relative_path, spec, &id);
@@ -101,11 +96,10 @@ impl Attempt {
             spec.to_string(),
             id.to_string(),
             false,
-            token,
         )
     }
 
-    fn get_offline_attempt(cache: PathBuf, token: String) -> Attempt {
+    fn get_offline_attempt(cache: PathBuf) -> Attempt {
         if Path::exists(&cache) {
             let cache_location = match fs::read_to_string(&cache) {
                 Ok(cache_content) => cache_content.to_string(),
@@ -130,7 +124,6 @@ impl Attempt {
                     spec.to_string(),
                     id.to_string(),
                     true,
-                    token,
                 );
             }
 

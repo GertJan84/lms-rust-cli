@@ -1,5 +1,3 @@
-use configparser::ini::WriteOptions;
-
 use crate::{attempt::Attempt, settings::Settings};
 
 pub fn show(settings: &Settings, arg: String) {
@@ -23,7 +21,5 @@ fn show_path(settings: &Settings) {
 }
 
 fn show_settings(settings: &Settings) {
-    let binding = settings.config.pretty_writes(&WriteOptions::default());
-    let settings_str = binding.as_str();
-    println!("{}", settings_str);
+    println!("{}", settings.pretty_print().as_str())
 }

@@ -50,16 +50,13 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
         match fs::read_to_string(".lms-ide") {
             Ok(lms_ide) => {
                 // Parse lms_ide file to exclude dots and remove white so that "android-studio . " becomes "android-studio"
-                if io::is_installed(&lms_ide) {
-                    let lms_ide = lms_ide
+                let lms_ide = lms_ide
                         .split_whitespace()
                         .filter(|&x| !x.contains("."))
                         .collect();
 
-                    editors.insert(0, lms_ide)
-                } else {
-                    eprintln!("{} is not installed", lms_ide)
-                }
+                editors.insert(0, lms_ide)
+
             }
             Err(_) => {}
         }
@@ -90,7 +87,7 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
 fn open_logic(settings: &Settings) -> () {
     let current_attempt = Attempt::get_current_attempt(&settings);
 
-    if !download_template(&current_attempt.token, &current_attempt) {
+    if !download_template(&settings.get_token(), &current_attempt) {
         println!(
             "Already exists in {}",
             &current_attempt.get_path_buf().to_str().unwrap().to_string()
@@ -101,7 +98,7 @@ fn open_logic(settings: &Settings) -> () {
         open_ide(&current_attempt.get_path_buf(), &settings.editors)
     }
 
-    if settings.get_setting("setup", "move_node_directories", true) {
+    if settings.get_bool("setup", "move_node_directories", true) {
         verify_logic()
     }
 
@@ -109,10 +106,7 @@ fn open_logic(settings: &Settings) -> () {
 }
 
 fn grade_logic(settings: &Settings, arg: String) {
-    let token = settings
-        .config
-        .get("auth", "token")
-        .unwrap_or("".to_string());
+    let token = settings.get_token();
     let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
     let response = io::request("GET", url_arg, &token, None);
 
@@ -165,10 +159,8 @@ fn grade_logic(settings: &Settings, arg: String) {
         let mut curriculum_dir = PathBuf::new();
         curriculum_dir.push(env::var("HOME").unwrap());
         curriculum_dir.push(
-            settings
-                .config
-                .get("grade", "curriculum_directory")
-                .unwrap_or("curriculum".to_string()),
+            settings.get_string("grade", 
+            "curriculum_directory", "curriculum".to_string())
         );
 
         let mut glob_path = PathBuf::new();
@@ -248,12 +240,8 @@ fn upload_logic(settings: &Settings) {
         return eprintln!("Try `lms template` first");
     }
 
-    if settings
-        .config
-        .getbool("custom", "check_todo")
-        .unwrap()
-        .unwrap_or(true)
-    {
+    if settings.get_bool("custom", "check_todo",true){
+
         if let Some(file_todo) = get_todo(&current_attempt.get_path_buf()) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
@@ -267,6 +255,7 @@ fn upload_logic(settings: &Settings) {
             if prompt::yes_no("\nYou still have some TODO's in your code do you want to fix them") {
                 return println!("Upload cancelled");
             }
+    
         }
     }
 
@@ -307,7 +296,7 @@ fn upload_logic(settings: &Settings) {
         current_attempt.id.to_string()
     );
 
-    match io::request("POST", url, &current_attempt.token, Some(data.stdout)) {
+    match io::request("POST", url, &settings.get_token(), Some(data.stdout)) {
         Some(res) => {
             let json_res: serde_json::Value = io::response_to_json(res);
 
@@ -317,7 +306,7 @@ fn upload_logic(settings: &Settings) {
                         let upload_kb = upload_bytes / 1024;
                         println!("Uploaded complete: {}kb transferred", upload_kb);
 
-                        if settings.get_setting("setup", "upload_open_browser", true) {
+                        if settings.get_bool("setup", "upload_open_browser", true) {
                             let _ = webbrowser::open(&current_attempt.get_url());
                         } else {
                             println!("Please remember that you still need to submit in the web interface");
@@ -336,10 +325,7 @@ fn upload_logic(settings: &Settings) {
 }
 
 fn download_logic(settings: &Settings, arg: String) {
-    let token = settings
-        .config
-        .get("auth", "token")
-        .unwrap_or("".to_string());
+    let token = settings.get_token();
 
     if !arg.eq("all") {
         let _ = download_attempt(&arg, &token);
@@ -453,7 +439,7 @@ fn download_attempt(assignment: &String, token: &String) -> bool {
 fn template_logic(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
 
-    if !download_template(&current_attempt.token, &current_attempt) {
+    if !download_template(&settings.get_token(), &current_attempt) {
         let error_message = format!(
             "Output directory {} already exists",
             current_attempt.get_path_buf().to_str().unwrap().to_string()

@@ -56,9 +56,7 @@ impl Settings {
     }
 
     pub fn get_string(&self, section: &str, key: &str, default: String) -> String {
-        self.config
-            .get(section, key)
-            .unwrap_or(default)
+        self.config.get(section, key).unwrap_or(default)
     }
 
     pub fn pretty_print(&self) -> String {

@@ -13,7 +13,7 @@ pub fn toggle(settings: Settings, arg: String) {
 }
 
 fn toggle_setup(mut settings: Settings, key: &str) {
-    let value = settings.get_setting("setup", key, false);
+    let value = settings.get_bool("setup", key, false);
     let new_value = !value;
     settings.set("setup".to_string(), key.to_string(), new_value.to_string());
     println!("Updated setting\n{}: {} -> {}", key, value, new_value)

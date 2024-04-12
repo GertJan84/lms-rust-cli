@@ -10,6 +10,7 @@ mod io;
 mod prompt;
 mod settings;
 mod show;
+mod toggle;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
@@ -75,7 +76,16 @@ fn main() {
             )
             .about("Show info from the client")
             .arg_required_else_help(true)
-        )
+            )
+        .subcommand(Command::new("toggle")
+            .subcommands([
+                Command::new("move_directories").short_flag('D').about("update your file structure so it matches correct"), 
+                Command::new("upload_browser").short_flag('B').about("upload the attempt and open an browser to that attempt")
+                ]
+            )
+            .about("Toggle settings true or false")
+            .arg_required_else_help(true)
+            )
 
         .get_matches();
 
@@ -96,6 +106,9 @@ fn main() {
             ),
             ("show", sub_command) => {
                 arguments::execute("show", sub_command.subcommand_name().unwrap().to_string())
+            }
+            ("toggle", sub_command) => {
+                arguments::execute("toggle", sub_command.subcommand_name().unwrap().to_string())
             }
             _ => eprintln!("Invalid command"),
         },

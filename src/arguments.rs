@@ -1,4 +1,4 @@
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings, show};
+use crate::{attempt::Attempt, files, io, prompt, settings::Settings, show, toggle};
 use gethostname::gethostname;
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
@@ -30,6 +30,7 @@ pub fn execute(command: &str, arg: String) {
         "verify" => verify_logic(),
         "login" => login_logic(settings),
         "show" => show::show(&settings, arg),
+        "toggle" => toggle::toggle(settings, arg),
         _ => {
             eprintln!("invalid command {}", command);
         }

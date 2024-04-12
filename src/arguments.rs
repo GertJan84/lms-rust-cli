@@ -52,12 +52,11 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
             Ok(lms_ide) => {
                 // Parse lms_ide file to exclude dots and remove white so that "android-studio . " becomes "android-studio"
                 let lms_ide = lms_ide
-                        .split_whitespace()
-                        .filter(|&x| !x.contains("."))
-                        .collect();
+                    .split_whitespace()
+                    .filter(|&x| !x.contains("."))
+                    .collect();
 
                 editors.insert(0, lms_ide)
-
             }
             Err(_) => {}
         }
@@ -159,10 +158,11 @@ fn grade_logic(settings: &Settings, arg: String) {
 
         let mut curriculum_dir = PathBuf::new();
         curriculum_dir.push(env::var("HOME").unwrap());
-        curriculum_dir.push(
-            settings.get_string("grade", 
-            "curriculum_directory", "curriculum".to_string())
-        );
+        curriculum_dir.push(settings.get_string(
+            "grade",
+            "curriculum_directory",
+            "curriculum".to_string(),
+        ));
 
         let mut glob_path = PathBuf::new();
         glob_path.push(&curriculum_dir);
@@ -241,8 +241,7 @@ fn upload_logic(settings: &Settings) {
         return eprintln!("Try `lms template` first");
     }
 
-    if settings.get_bool("custom", "check_todo",true){
-
+    if settings.get_bool("custom", "check_todo", true) {
         if let Some(file_todo) = get_todo(&current_attempt.get_path_buf()) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
@@ -256,7 +255,6 @@ fn upload_logic(settings: &Settings) {
             if prompt::yes_no("\nYou still have some TODO's in your code do you want to fix them") {
                 return println!("Upload cancelled");
             }
-    
         }
     }
 

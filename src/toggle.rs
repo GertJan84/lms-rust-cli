@@ -4,8 +4,8 @@ pub fn toggle(settings: Settings, arg: String) {
     let arg = arg.as_str();
 
     match arg {
-        "move_directories" => toggle_setup(settings, "move_node_directories"),
-        "upload_browser" => toggle_setup(settings, "upload_open_browser"),
+        "move_node_directories" => toggle_setup(settings, "move_node_directories"),
+        "upload_open_browser" => toggle_setup(settings, "upload_open_browser"),
         _ => {
             eprintln!("invalid subcommand {}", arg);
         }

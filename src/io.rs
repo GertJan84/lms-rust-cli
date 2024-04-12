@@ -1,22 +1,24 @@
-use serde_json::Value;
-use std::{
-    path::{Path, PathBuf},
-    io::Write,
-    process::{Command, Stdio, exit},
-    env,
-    fs
-};
 use crate::files;
 use reqwest::{
-    blocking::{Response, Client},
-    StatusCode
+    blocking::{Client, Response},
+    StatusCode,
+};
+use serde_json::Value;
+use std::{
+    env, fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::{exit, Command, Stdio},
 };
 
 // use crate::CLI_VERSION;
 
-
-pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>) -> Option<Response>  {
-
+pub fn request(
+    method: &str,
+    path: String,
+    token: &String,
+    data: Option<Vec<u8>>,
+) -> Option<Response> {
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
     } else {
@@ -27,46 +29,42 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
     let res = match method {
         "GET" => client.get(url).header("authorization", token).send(),
-        "POST" => client.post(url).header("authorization", token).body(data.clone().unwrap()).send(),
-        _=> {
+        "POST" => client
+            .post(url)
+            .header("authorization", token)
+            .body(data.clone().unwrap())
+            .send(),
+        _ => {
             eprintln!("Invalid method: {}", method);
             exit(1)
         }
     };
 
-
     match res {
-        Ok(res) => {
-            match res.status() {
-                StatusCode::OK => {
-                    Some(res)
-                }
+        Ok(res) => match res.status() {
+            StatusCode::OK => Some(res),
 
-                StatusCode::UNAUTHORIZED => {
-                    eprintln!("You are not logged in");
-                    exit(1)
-                }
-
-                StatusCode::FORBIDDEN => {
-                    eprintln!("You don't have the right to access this");
-                    exit(1)
-                }
-
-
-                StatusCode::IM_A_TEAPOT => {
-                    println!("Updating client ...");
-                    handle_upgrade();
-                    println!("done");
-                    exit(0)
-                }
-                _ => {
-                    eprintln!("Server status not handled: {:?}", res.status());
-                    exit(1);
-                }
-
+            StatusCode::UNAUTHORIZED => {
+                eprintln!("You are not logged in");
+                exit(1)
             }
 
-        }
+            StatusCode::FORBIDDEN => {
+                eprintln!("You don't have the right to access this");
+                exit(1)
+            }
+
+            StatusCode::IM_A_TEAPOT => {
+                println!("Updating client ...");
+                handle_upgrade();
+                println!("done");
+                exit(0)
+            }
+            _ => {
+                eprintln!("Server status not handled: {:?}", res.status());
+                exit(1);
+            }
+        },
         Err(_) => {
             println!("Request failed because the client is offline");
             None
@@ -109,7 +107,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     };
 
     if res.is_none() {
-        return
+        return;
     }
 
     let mut tar_process = Command::new(cmd)
@@ -121,18 +119,15 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
         .expect("Failed to start tar process");
 
     match tar_process.stdin.take() {
-        Some(mut stdin) => {
-            match res {
-                Some(mut unwrap_res) => {
-                    let mut res_body = vec![];
-                    let _ = unwrap_res.copy_to(&mut res_body);
-                    let _ = stdin.write(&res_body);
-
-                }
-                None => {
-                    eprintln!("Warning: Got no response from server");
-                    exit(1)
-                }
+        Some(mut stdin) => match res {
+            Some(mut unwrap_res) => {
+                let mut res_body = vec![];
+                let _ = unwrap_res.copy_to(&mut res_body);
+                let _ = stdin.write(&res_body);
+            }
+            None => {
+                eprintln!("Warning: Got no response from server");
+                exit(1)
             }
         },
         None => {
@@ -144,9 +139,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     drop(tar_process)
 }
 
-
 pub fn handle_upgrade() {
-
     let repo_url = env!("CARGO_PKG_REPOSITORY");
     let exe_name = "lms";
     let tmp_loc = Path::new("/tmp/lms_rust");
@@ -171,11 +164,10 @@ pub fn handle_upgrade() {
 
     execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
 
-    if files::is_folder_empty(&tmp_loc.to_path_buf()) { 
+    if files::is_folder_empty(&tmp_loc.to_path_buf()) {
         eprintln!("Can't clone new version");
         exit(1)
     }
-
 
     println!("Cloned new version");
     if let Err(err) = env::set_current_dir(tmp_loc) {
@@ -211,7 +203,6 @@ pub fn handle_upgrade() {
         exit(1)
     }
 
-
     match fs::copy(&new_compiled_exec.as_path(), lms_loc.join(exe_name)) {
         Ok(_) => {
             println!("LMS updated to a new version: ");
@@ -221,11 +212,9 @@ pub fn handle_upgrade() {
             exit(1)
         }
     }
-        
 
     if let Err(err) = fs::remove_dir_all(tmp_loc) {
         eprintln!("A error occurred: {}", err);
         exit(1)
     }
-
 }

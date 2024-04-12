@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
-use std::env;
 use configparser::ini::Ini;
+use std::env;
+use std::path::{Path, PathBuf};
 
 const FALLBACK: [&str; 4] = ["nvim", "code", "vscode", "codium"];
 
@@ -10,10 +10,8 @@ pub struct Settings {
     pub editors: Vec<String>,
 }
 
-
 impl Settings {
     pub fn new() -> Self {
-
         let mut config = Ini::new();
         let mut config_path = PathBuf::new();
 

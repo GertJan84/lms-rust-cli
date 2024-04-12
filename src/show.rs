@@ -2,7 +2,6 @@ use configparser::ini::WriteOptions;
 
 use crate::{attempt::Attempt, settings::Settings};
 
-
 pub fn show(settings: &Settings, arg: String) {
     let arg = arg.as_str();
 

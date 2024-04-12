@@ -94,7 +94,9 @@ fn main() {
                 "grade",
                 arg.get_one::<String>("short_name").unwrap().to_string(),
             ),
-            ("show", sub_command) => arguments::execute("show", sub_command.subcommand_name().unwrap().to_string()),
+            ("show", sub_command) => {
+                arguments::execute("show", sub_command.subcommand_name().unwrap().to_string())
+            }
             _ => eprintln!("Invalid command"),
         },
         _ => eprintln!("Error"),

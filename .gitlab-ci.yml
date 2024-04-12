@@ -1,6 +1,5 @@
 stages:
   - build
-  - release
 
 variables:
   BUILD_DIR: "build"
@@ -15,41 +14,6 @@ build_x86:
   artifacts:
     paths:
       - $BUILD_DIR/lms_x86
-
-build_arm:
-  stage: build
-  image: rust:latest 
-  script:
-    - mkdir -p $BUILD_DIR
-    - cargo build --release 
-    - mv target/release/lms $BUILD_DIR/lms_arm
-  artifacts:
-    paths:
-      - $BUILD_DIR/lms_arm
-
-release:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  script:
-    - echo 'running release_job'
-    - echo 'Previous Job ID is printed below'
-    - echo $GE_JOB_ID
-  # Specifying that this job requires artifacts from the previous job to succeed
-  needs:
-    - job: build_x86
-      artifacts: true
-    - job: build_arm
-      artifacts: true
-  release:
-    name: 'Release Executables $CI_COMMIT_SHORT_SHA'
-    description: 'Created using the release-cli'
-    # tag_name is a mandatory field and cannot be an empty string
-    tag_name: '$CI_COMMIT_SHORT_SHA'
-    assets:
-      links:
-        - name: 'Linux executable'
-          url: '$CI_JOB_URL/artifacts/file/build/lms_x86'
-        - name: 'Arm executable'
-          url: '$CI_JOB_URL/artifacts/file/build/lms_arm'
   only:
     - main
+

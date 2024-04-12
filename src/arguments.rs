@@ -1,5 +1,4 @@
 use crate::{attempt::Attempt, files, io, prompt, settings::Settings, show};
-use configparser::ini::WriteOptions;
 use gethostname::gethostname;
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
@@ -52,12 +51,16 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
         match fs::read_to_string(".lms-ide") {
             Ok(lms_ide) => {
                 // Parse lms_ide file to exclude dots and remove white so that "android-studio . " becomes "android-studio"
-                let lms_ide = lms_ide
-                    .split_whitespace()
-                    .filter(|&x| !x.contains("."))
-                    .collect();
+                if io::is_installed(&lms_ide) {
+                    let lms_ide = lms_ide
+                        .split_whitespace()
+                        .filter(|&x| !x.contains("."))
+                        .collect();
 
-                editors.insert(0, lms_ide)
+                    editors.insert(0, lms_ide)
+                } else {
+                    eprintln!("{} is not installed", lms_ide)
+                }
             }
             Err(_) => {}
         }
@@ -86,29 +89,24 @@ fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
 }
 
 fn open_logic(settings: &Settings) -> () {
-    let current_attempt = Attempt::get_current_attempt(settings);
+    let current_attempt = Attempt::get_current_attempt(&settings);
 
     if !download_template(&current_attempt.token, &current_attempt) {
         println!(
             "Already exists in {}",
-            &current_attempt.path.to_str().unwrap().to_string()
+            &current_attempt.get_path_buf().to_str().unwrap().to_string()
         );
     }
 
     if current_attempt.offline {
-        open_ide(&current_attempt.path, &settings.editors)
+        open_ide(&current_attempt.get_path_buf(), &settings.editors)
     }
 
-    if settings
-        .config
-        .getbool("setup", "move_node_directories")
-        .unwrap()
-        .unwrap_or(true)
-    {
+    if settings.get_setting("setup", "move_node_directories", true) {
         verify_logic()
     }
 
-    open_ide(&current_attempt.path, &settings.editors)
+    open_ide(&current_attempt.get_path_buf(), &settings.editors)
 }
 
 
@@ -243,11 +241,11 @@ fn login_logic(mut settings: Settings) {
 
 fn upload_logic(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
-
-    if !Path::exists(&current_attempt.path) {
+    
+    if !Path::exists(&current_attempt.get_path_buf()) {
         eprintln!(
             "There is no folder: {}",
-            current_attempt.path.to_str().unwrap()
+            current_attempt.get_path_buf().to_str().unwrap()
         );
         return eprintln!("Try `lms template` first");
     }
@@ -258,7 +256,7 @@ fn upload_logic(settings: &Settings) {
         .unwrap()
         .unwrap_or(true)
     {
-        if let Some(file_todo) = get_todo(&current_attempt.path) {
+        if let Some(file_todo) = get_todo(&current_attempt.get_path_buf()) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {
                 println!("\n{}: has some TODO's:", file);
@@ -280,7 +278,7 @@ fn upload_logic(settings: &Settings) {
         "tar"
     };
 
-    if files::is_folder_empty(&current_attempt.path).unwrap() {
+    if files::is_folder_empty(&current_attempt.get_path_buf()).unwrap() {
         if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
             return eprintln!("Cancelled upload");
         }
@@ -288,7 +286,7 @@ fn upload_logic(settings: &Settings) {
 
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(current_attempt.path.to_str().unwrap().to_string())
+        .arg(current_attempt.get_path_buf().to_str().unwrap().to_string())
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
@@ -320,9 +318,14 @@ fn upload_logic(settings: &Settings) {
                     if let Some(upload_bytes) = transferred.as_u64() {
                         let upload_kb = upload_bytes / 1024;
                         println!("Uploaded complete: {}kb transferred", upload_kb);
-                        println!(
-                            "Please remember that you still need to submit in the web interface"
-                        )
+
+                        if settings.get_setting("setup", "upload_open_browser", true) {
+                            let _ = webbrowser::open(&current_attempt.get_url());
+                        }
+                        else {
+                            println!("Please remember that you still need to submit in the web interface");
+                        }
+
                     }
                 }
                 None => {
@@ -356,6 +359,7 @@ fn download_logic(settings: &Settings, arg: String) {
 
     let mut local_dirs: HashSet<String> = HashSet::new();
     let target_dir = files::get_lms_dir().join("*/*");
+
     for path in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         match path {
             Ok(path) => {
@@ -373,6 +377,8 @@ fn download_logic(settings: &Settings, arg: String) {
     }
 
     attempts
+        .as_array()
+        .unwrap()[0]
         .as_object()
         .unwrap()
         .iter()
@@ -456,7 +462,7 @@ fn template_logic(settings: &Settings) {
     if !download_template(&current_attempt.token, &current_attempt) {
         let error_message = format!(
             "Output directory {} already exists",
-            current_attempt.path.to_str().unwrap().to_string()
+            current_attempt.get_path_buf().to_str().unwrap().to_string()
         );
 
         return eprintln!("{}", error_message);
@@ -464,11 +470,11 @@ fn template_logic(settings: &Settings) {
 }
 
 fn download_template(token: &String, attempt: &Attempt) -> bool {
-    if !Path::exists(&attempt.path) {
-        let _ = fs::create_dir_all(&attempt.path);
-        println!("Created {}", &attempt.path.to_str().unwrap());
+    if !Path::exists(&attempt.get_path_buf()) {
+        let _ = fs::create_dir_all(&attempt.get_path_buf());
+        println!("Created {}", &attempt.get_path_buf().to_str().unwrap());
     } else {
-        if !files::is_folder_empty(&attempt.path).unwrap() {
+        if !files::is_folder_empty(&attempt.get_path_buf()).unwrap() {
             return false;
         }
     }
@@ -479,66 +485,12 @@ fn download_template(token: &String, attempt: &Attempt) -> bool {
     }
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
-    io::download_tgz(url, &token, &attempt.path);
+    io::download_tgz(url, &token, &attempt.get_path_buf());
     true
 }
 
 fn verify_logic() {
-    if move_node_directories() {
-        println!("All nodes are in the right place!");
-    }
-}
-
-fn move_node_directories() -> bool {
-    let lms_dir = files::get_lms_dir();
-
-    let correct_paths_json =
-        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None, true) {
-            Some(data) => io::response_to_json(data),
-            None => {
-                eprintln!("Cant convert paths to json");
-                exit(1)
-            }
-        };
-
-    let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
-
-    let target_dir = lms_dir.join("*/*");
-    // Get all directories in lms [python, pwa, static-web, ..etc]
-    for dir in glob(target_dir.to_str().unwrap()).expect("Faild to read lms dir") {
-        let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
-
-        // Get all chilled directorys in lms [css, vars, svelte, ..etc]
-        if let Ok(ref path) = dir {
-            if path.is_dir() {
-                let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
-
-                if local_path_current.eq("grading") {
-                    continue;
-                }
-
-                // TODO: Refactor this
-                if let correct_path_object = Some(&correct_paths_json) {
-                    let pressent_node_id = correct_paths_json.as_object().unwrap().get(&node_id);
-                    if pressent_node_id.is_some() {
-                        if let correct_path =
-                            pressent_node_id.unwrap().as_str().unwrap().to_string()
-                        {
-                            if !correct_path.eq(local_path_current.to_str().unwrap()) {
-                                let local_path = lms_dir.join(local_path_current).join(&node_id);
-                                let valid_path = lms_dir.join(correct_path).join(&node_id);
-
-                                if !Path::exists(&valid_path) {
-                                    misplaced.insert(local_path, valid_path);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    let misplaced = files::get_misplaced_nodes();
     if misplaced.len() != 0 {
         println!("These directories are not in their recommended locations:");
         for (local_directory, valid_directory) in &misplaced {
@@ -547,16 +499,49 @@ fn move_node_directories() -> bool {
                 local_directory.to_str().unwrap().to_string(),
                 valid_directory.to_str().unwrap().to_string()
             );
-            let permission = prompt::yes_no("Would you like to move them?");
+        }
 
-            if !permission {
-                return false;
+        if !prompt::yes_no("Would you like to move them?") {
+            return;
+        }
+
+        // If you want to replace them
+        for (local_directory, valid_directory) in &misplaced {
+
+            if let Some(parent) = valid_directory.parent() {
+                if !Path::exists(parent) {
+                    if let Err(err) = fs::create_dir(parent) {
+                        eprintln!("Faild to create new node directory: {}", err);
+                    }
+                }
             }
-            let _ = fs::rename(local_directory, valid_directory);
+
+            if let Err(err) = fs::rename(local_directory, valid_directory) {
+                println!("{} -> {}", local_directory.to_str().unwrap(), valid_directory.to_str().unwrap());
+                println!("Can't move folder becuase: {}", err);
+                exit(1);
+            }
         }
     }
-    true
-}
+
+    if let Some(empty_dirs) = files::get_empty_lms() {
+        println!("\nThe following folders are empty");
+        for dir in &empty_dirs {
+            println!("  - {}", dir.to_str().unwrap());
+        }
+
+        if prompt::yes_no("\nDo you want to remove them") {
+            for dir in &empty_dirs {
+                if let Err(err) = fs::remove_dir(dir) {
+                    eprintln!("Can't remove folder: {}", err);
+                    exit(1)
+                }
+            }
+        }
+    }
+
+    println!("All nodes are in the right place!");
+    }
 
 fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
     let mut file_todo = HashMap::new();

@@ -46,6 +46,7 @@ token=123
 [setup]
 move_node_directories=true
 enabled=true
+upload_open_browser=true
 
 [custom]
 editor=custom_script

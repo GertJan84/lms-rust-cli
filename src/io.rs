@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
-    io::{self, Write},
+    io::Write,
     process::{Command, Stdio, exit},
     env,
     fs
@@ -11,7 +11,7 @@ use reqwest::{
     StatusCode
 };
 
-use crate::CLI_VERSION;
+// use crate::CLI_VERSION;
 
 
 pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, recursive: bool) -> Option<Response>  {
@@ -162,17 +162,23 @@ pub fn handle_upgrade() {
     }
 
     if Path::exists(&tmp_loc) {
-        let rm_folder = fs::remove_dir_all(tmp_loc);
-        if rm_folder.is_err() {
-            eprintln!("Can't remove tmp folder: {}", rm_folder.unwrap_err())
+        if let Err(err) = fs::remove_dir_all(tmp_loc) {
+            eprintln!("Can't remove tmp folder: {}", err)
         }
     }
 
-    let _ = fs::create_dir_all(tmp_loc);
+    if let Err(err) = fs::create_dir_all(tmp_loc) {
+        eprintln!("A error occurred: {}", err);
+        exit(1)
+    }
 
     execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
     println!("Cloned new version");
-    let _ = env::set_current_dir(tmp_loc);
+    if let Err(err) = env::set_current_dir(tmp_loc) {
+        eprintln!("A error occurred: {}", err);
+        exit(1)
+    }
+
     execute_command("cargo", vec!["build", "--release", "--quiet"]);
     println!("Compiled new version");
 
@@ -182,12 +188,32 @@ pub fn handle_upgrade() {
     lms_loc.push("bin");
 
     if !Path::exists(&lms_loc) {
-        let _ = fs::create_dir_all(&lms_loc);
+        if let Err(err) = fs::create_dir_all(&lms_loc) {
+            eprintln!("A error occurred: {}", err);
+            exit(1)
+        }
     }
 
-    let _ = fs::remove_file(&lms_loc.join(exe_name));
-    let _ = fs::copy(tmp_loc.join("target").join("release").join(exe_name).as_path(), lms_loc.join(exe_name));
+    if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
+        eprintln!("A error occurred: {}", err);
+        exit(1)
+    }
 
-    let _ = fs::remove_dir_all(tmp_loc);
+
+    match fs::copy(tmp_loc.join("target").join("release").join(exe_name).as_path(), lms_loc.join(exe_name)) {
+        Ok(_) => {
+            println!("LMS updated to version: {}", env!("CARGO_PKG_VERSION"));
+        }
+        Err(err) => {
+            eprintln!("A error occurred: {}", err);
+            exit(1)
+        }
+    }
+        
+
+    if let Err(err) = fs::remove_dir_all(tmp_loc) {
+        eprintln!("A error occurred: {}", err);
+        exit(1)
+    }
 
 }

@@ -116,7 +116,7 @@ fn grade_logic(settings: &Settings, arg: String) {
         .get("auth", "token")
         .unwrap_or("".to_string());
     let url_arg = format!("/api/attempts/{}", arg.replace("~", ":"));
-    let response = io::request("GET", url_arg, &token, None, true);
+    let response = io::request("GET", url_arg, &token, None);
 
     let attempts = match response {
         Some(data) => io::response_to_json(data),
@@ -309,7 +309,7 @@ fn upload_logic(settings: &Settings) {
         current_attempt.id.to_string()
     );
 
-    match io::request("POST", url, &current_attempt.token, Some(data.stdout), true) {
+    match io::request("POST", url, &current_attempt.token, Some(data.stdout)) {
         Some(res) => {
             let json_res: serde_json::Value = io::response_to_json(res);
 
@@ -349,7 +349,7 @@ fn download_logic(settings: &Settings, arg: String) {
         let _ = download_attempt(&arg, &token);
     }
 
-    let response = io::request("GET", "/api/node-paths".to_string(), &token, None, true);
+    let response = io::request("GET", "/api/node-paths".to_string(), &token, None);
     let attempts = match response {
         Some(data) => io::response_to_json(data),
         None => {
@@ -401,7 +401,7 @@ fn download_logic(settings: &Settings, arg: String) {
 
 fn download_attempt(assignment: &String, token: &String) -> bool {
     let url_arg = format!("/api/attempts/@{}", assignment.replace("~", ":"));
-    let response = io::request("GET", url_arg, token, None, true);
+    let response = io::request("GET", url_arg, token, None);
 
     let attempts = match response {
         Some(data) => io::response_to_json(data),

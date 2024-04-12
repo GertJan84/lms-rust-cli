@@ -60,7 +60,6 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
         "/api/node-paths".to_string(),
         &"".to_string(),
         None,
-        true,
     ) {
         Some(data) => io::response_to_json(data),
         None => {

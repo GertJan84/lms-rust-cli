@@ -45,7 +45,7 @@ impl Attempt {
         let mut cache = lms_dir.clone();
         cache.push(".cache");
     
-        let res = io::request("GET", "/api/attempts/current".to_string(), &token, None, true);
+        let res = io::request("GET", "/api/attempts/current".to_string(), &token, None);
         
         if res.is_none() {
             return Self::get_offline_attempt(cache, token);

@@ -50,10 +50,10 @@ token=123
 move_node_directories=true
 enabled=true
 upload_open_browser=true
+check_todo=true
 
 [custom]
 editor=custom_script
-check_todo=true
 ```
 
 ### Setups options
@@ -65,3 +65,4 @@ If the option is not in your `lms.ini` file it will be set to true automatically
 
 `move_node_directories` or `-D`: Moves the directories if they are on the wrong place in your system.
 `upload_open_browser` or `-B`: Opens an browser to the correct attempt what you want to upload.
+`check_todo` or `-T`: Checks if there are any todo's in the current files and will ask it.

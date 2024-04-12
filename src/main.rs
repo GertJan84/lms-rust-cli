@@ -80,7 +80,8 @@ fn main() {
         .subcommand(Command::new("toggle")
             .subcommands([
                 Command::new("move_node_directories").short_flag('D').about("update your file structure so it matches correct"), 
-                Command::new("upload_open_browser").short_flag('B').about("upload the attempt and open an browser to that attempt")
+                Command::new("upload_open_browser").short_flag('B').about("upload the attempt and open an browser to that attempt"),
+                Command::new("check_todo").short_flag('T').about("upload the attempt and open an browser to that attempt")
                 ]
             )
             .about("Toggle settings true or false")

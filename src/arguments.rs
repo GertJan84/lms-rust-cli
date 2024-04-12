@@ -241,7 +241,7 @@ fn upload_logic(settings: &Settings) {
         return eprintln!("Try `lms template` first");
     }
 
-    if settings.get_bool("custom", "check_todo", true) {
+    if settings.get_bool("setup", "check_todo", true) {
         if let Some(file_todo) = get_todo(&current_attempt.get_path_buf()) {
             println!("You still have some TODO's in your code: ");
             for (file, todos) in file_todo {

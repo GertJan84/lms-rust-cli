@@ -10,14 +10,21 @@ pub fn get_lms_dir() -> PathBuf {
     lms_dir
 }
 
-pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
-    let dir_entries = fs::read_dir(path)?;
+pub fn is_folder_empty(path: &PathBuf) -> bool {
 
-    for _ in dir_entries {
-        return Ok(false)
+    if !Path::exists(&path) {
+        return false
     }
 
-    Ok(true)
+    if let Ok(dir_entries) = fs::read_dir(path) {
+        for _  in dir_entries {
+            return false
+        }
+        return true
+    }
+
+    false
+
 }
 
 pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
@@ -30,7 +37,7 @@ pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
                 continue;
             }
 
-            if !is_folder_empty(&path).unwrap_or(false) {
+            if !is_folder_empty(&path) {
                 continue;
             }
 

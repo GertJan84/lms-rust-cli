@@ -138,7 +138,7 @@ fn grade_logic(settings: &Settings, arg: String) {
     );
 
     if Path::exists(&out_dir) {
-        if files::is_folder_empty(&out_dir).unwrap() {
+        if files::is_folder_empty(&out_dir) {
             match fs::remove_dir_all(&out_dir) {
                 Ok(_) => {}
                 Err(err) => eprintln!("Cant remove directory because: {}", err),
@@ -278,7 +278,7 @@ fn upload_logic(settings: &Settings) {
         "tar"
     };
 
-    if files::is_folder_empty(&current_attempt.get_path_buf()).unwrap() {
+    if files::is_folder_empty(&current_attempt.get_path_buf()) {
         if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
             return eprintln!("Cancelled upload");
         }
@@ -474,7 +474,7 @@ fn download_template(token: &String, attempt: &Attempt) -> bool {
         let _ = fs::create_dir_all(&attempt.get_path_buf());
         println!("Created {}", &attempt.get_path_buf().to_str().unwrap());
     } else {
-        if !files::is_folder_empty(&attempt.get_path_buf()).unwrap() {
+        if !files::is_folder_empty(&attempt.get_path_buf()) {
             return false;
         }
     }

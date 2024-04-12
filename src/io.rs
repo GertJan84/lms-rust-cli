@@ -6,6 +6,7 @@ use std::{
     env,
     fs
 };
+use crate::files;
 use reqwest::{
     blocking::{Response, Client},
     StatusCode
@@ -98,7 +99,7 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .expect("Can't find which")
+        .expect("error on executing command")
         .success();
 }
 
@@ -173,6 +174,13 @@ pub fn handle_upgrade() {
     }
 
     execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
+
+    if files::is_folder_empty(&tmp_loc.to_path_buf()) { 
+        eprintln!("Can't clone new version");
+        exit(1)
+    }
+
+
     println!("Cloned new version");
     if let Err(err) = env::set_current_dir(tmp_loc) {
         eprintln!("A error occurred: {}", err);
@@ -180,7 +188,6 @@ pub fn handle_upgrade() {
     }
 
     execute_command("cargo", vec!["build", "--release", "--quiet"]);
-    println!("Compiled new version");
 
     let mut lms_loc = PathBuf::new();
     lms_loc.push(env::var("HOME").unwrap());
@@ -194,15 +201,24 @@ pub fn handle_upgrade() {
         }
     }
 
+    let new_compiled_exec = tmp_loc.join("target").join("release").join(exe_name);
+
+    if !Path::exists(&new_compiled_exec.as_path()) {
+        eprintln!("Can't find new compiled lms");
+        exit(1);
+    }
+
+    println!("Compiled new version");
+
     if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
         eprintln!("A error occurred: {}", err);
         exit(1)
     }
 
 
-    match fs::copy(tmp_loc.join("target").join("release").join(exe_name).as_path(), lms_loc.join(exe_name)) {
+    match fs::copy(&new_compiled_exec.as_path(), lms_loc.join(exe_name)) {
         Ok(_) => {
-            println!("LMS updated to version: {}", env!("CARGO_PKG_VERSION"));
+            println!("LMS updated to a new version: ");
         }
         Err(err) => {
             eprintln!("A error occurred: {}", err);

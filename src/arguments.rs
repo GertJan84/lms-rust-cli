@@ -504,7 +504,7 @@ fn verify_logic() {
             if let Some(parent) = valid_directory.parent() {
                 if !Path::exists(parent) {
                     if let Err(err) = fs::create_dir(parent) {
-                        eprintln!("Faild to create new node directory: {}", err);
+                        eprintln!("Failed to create new node directory: {}", err);
                     }
                 }
             }
@@ -515,7 +515,7 @@ fn verify_logic() {
                     local_directory.to_str().unwrap(),
                     valid_directory.to_str().unwrap()
                 );
-                println!("Can't move folder becuase: {}", err);
+                println!("Can't move folder because: {}", err);
                 exit(1);
             }
         }

@@ -10,10 +10,7 @@ EXE_NAME = "lms"
 TMP_LOC = "/tmp/lms_rust"
 
 
-REQUIRED_INSTALLED = {
-    "git": "git",
-    "cargo": "rustup"
-}
+REQUIRED_INSTALLED = {"git": "git", "cargo": "rustup"}
 
 
 def die(message: str) -> NoReturn:
@@ -36,7 +33,8 @@ def lprint(message: str) -> None:
     """
     print(f"{message} ...", end="", flush=True)
 
-def execute(commands: list[str], errMessage: str) -> None:
+
+def execute(commands: list[str], err_message: str) -> None:
     """
     Execute a list of commands.
 
@@ -60,16 +58,17 @@ def execute(commands: list[str], errMessage: str) -> None:
         check=False,
     )
 
-    if process_exe == 1:
-        die(errMessage)
+    if process_exe == 1:  # type: ignore
+        die(err_message)
 
-def is_installed(command: str, errMessage: str) -> None | NoReturn:
+
+def is_installed(command: str, err_message: str) -> None | NoReturn:
     if not shutil.which(command):
-        die(errMessage)
+        die(err_message)
+
 
 def main():
-
-    print(f"""
+    print(rf"""
                              /$$       /$$      /$$  /$$$$$$ 
                             | $$      | $$$    /$$$ /$$__  $$
                             | $$      | $$$$  /$$$$| $$  \__/
@@ -82,11 +81,14 @@ def main():
                                  
                                 
 To install lms-rust you need to have: 
-{[program for program in REQUIRED_INSTALLED.keys()]} installed.
-    """)
+{list(REQUIRED_INSTALLED.keys())} installed.
+    """)  # noqa: W291
 
     for program, install_method in REQUIRED_INSTALLED.items():
-        is_installed(program, f"You don't have {install_method.title()} installed. Please install {install_method.title()}.")
+        is_installed(
+            program,
+            f"You don't have {install_method.title()} installed. Please install {install_method.title()}.",
+        )
 
     if os.path.exists(TMP_LOC):
         shutil.rmtree(TMP_LOC)
@@ -98,7 +100,9 @@ To install lms-rust you need to have:
 
     lprint("Compiling")
     os.chdir(TMP_LOC)
-    execute(["cargo", "build", "--release", "--quiet"], "Error occurred during compilation.")
+    execute(
+        ["cargo", "build", "--release", "--quiet"], "Error occurred during compilation."
+    )
     print(" done")
 
     lprint("Organizing file system")
@@ -109,13 +113,14 @@ To install lms-rust you need to have:
     )
     shutil.rmtree(TMP_LOC, ignore_errors=True)
     print(" done")
-   
-    if path := os.getenv("PATH"):
+
+    if path := os.getenv("PATH"):  # noqa: SIM102
         if os.path.expanduser("~/.local/bin") not in path:
             print("This system doesn't have $HOME/.local/bin in its PATH.")
             print("  Add this before running lms")
 
     print("\nInstallation complete")
+
 
 if __name__ == "__main__":
     main()

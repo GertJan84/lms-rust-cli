@@ -37,23 +37,6 @@ def lprint(message: str) -> None:
     print(f"{message} ...", end="", flush=True)
 
 
-def user_choice(message: str) -> bool:
-    """
-    Get user choice Y/n default: Y.
-
-    Args:
-        message (str): The message to prompt the user.
-
-    Returns:
-        bool: True if user input is 'y' or empty, False if input is 'n'
-    """
-    valid_choice = ["y", "n", ""]
-
-    while True:
-        user_input = input(f"{message} [Y/n]: ").lower()
-        if user_input in valid_choice:
-            return user_input != "n"
-
 def execute(commands: list[str], errMessage: str) -> None:
     """
     Execute a list of commands.
@@ -107,8 +90,6 @@ To install lms-rust you need to have:
         is_installed(program, f"You don't have {install_method.title()} installed. Please install {install_method.title()}.")
 
     if os.path.exists(TMP_LOC):
-        if not user_choice("Would you like to remove the lms-rust temporary location?"):
-            die(f"Please remove {TMP_LOC}")
         shutil.rmtree(TMP_LOC)
 
     lprint("Downloading")

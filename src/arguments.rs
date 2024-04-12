@@ -38,7 +38,6 @@ pub fn execute(command: &str, arg: String) {
     exit(1)
 }
 
-
 fn open_ide(path: &PathBuf, editors: &Vec<String>) -> () {
     if let Err(err) = env::set_current_dir(&path) {
         eprintln!("{}", err);
@@ -108,7 +107,6 @@ fn open_logic(settings: &Settings) -> () {
 
     open_ide(&current_attempt.get_path_buf(), &settings.editors)
 }
-
 
 fn grade_logic(settings: &Settings, arg: String) {
     let token = settings
@@ -241,7 +239,7 @@ fn login_logic(mut settings: Settings) {
 
 fn upload_logic(settings: &Settings) {
     let current_attempt = Attempt::get_current_attempt(settings);
-    
+
     if !Path::exists(&current_attempt.get_path_buf()) {
         eprintln!(
             "There is no folder: {}",
@@ -321,11 +319,9 @@ fn upload_logic(settings: &Settings) {
 
                         if settings.get_setting("setup", "upload_open_browser", true) {
                             let _ = webbrowser::open(&current_attempt.get_url());
-                        }
-                        else {
+                        } else {
                             println!("Please remember that you still need to submit in the web interface");
                         }
-
                     }
                 }
                 None => {
@@ -376,9 +372,7 @@ fn download_logic(settings: &Settings, arg: String) {
         }
     }
 
-    attempts
-        .as_array()
-        .unwrap()[0]
+    attempts.as_array().unwrap()[0]
         .as_object()
         .unwrap()
         .iter()
@@ -507,7 +501,6 @@ fn verify_logic() {
 
         // If you want to replace them
         for (local_directory, valid_directory) in &misplaced {
-
             if let Some(parent) = valid_directory.parent() {
                 if !Path::exists(parent) {
                     if let Err(err) = fs::create_dir(parent) {
@@ -517,7 +510,11 @@ fn verify_logic() {
             }
 
             if let Err(err) = fs::rename(local_directory, valid_directory) {
-                println!("{} -> {}", local_directory.to_str().unwrap(), valid_directory.to_str().unwrap());
+                println!(
+                    "{} -> {}",
+                    local_directory.to_str().unwrap(),
+                    valid_directory.to_str().unwrap()
+                );
                 println!("Can't move folder becuase: {}", err);
                 exit(1);
             }
@@ -541,7 +538,7 @@ fn verify_logic() {
     }
 
     println!("All nodes are in the right place!");
-    }
+}
 
 fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
     let mut file_todo = HashMap::new();
@@ -589,4 +586,3 @@ fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, S
 
     None
 }
-

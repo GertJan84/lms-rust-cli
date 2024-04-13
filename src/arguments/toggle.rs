@@ -22,15 +22,20 @@ pub fn toggle_commands() -> Vec<Command> {
     ]
 }
 
+
 pub fn toggle(settings: Settings, arg: String) {
     let arg = arg.as_str();
 
-    match arg {
-        "move_node_directories" => toggle_setup(settings, arg),
-        "upload_open_browser" => toggle_setup(settings, arg),
-        "check_todo" => toggle_setup(settings, arg),
-        _ => eprintln!("invalid subcommand {}", arg),
+    let args = vec![
+        "move_node_directories",
+        "upload_open_browser", 
+        "check_todo"];
+
+    if args.contains(&arg) {
+        return toggle_setup(settings, arg)
     }
+
+    eprintln!("invalid subcommand {}", arg);
 }
 
 fn toggle_setup(mut settings: Settings, key: &str) {

@@ -4,6 +4,8 @@ mod ide;
 mod logics;
 mod login;
 mod setups;
+mod show;
+mod toggle;
 
 use std::process::exit;
 
@@ -22,8 +24,8 @@ pub fn execute(command: &str, arg: String) {
         "update" => crate::io::handle_upgrade(),
         "verify" => setups::verify_logic(),
         "login" => login::login_logic(settings),
-        "show" => crate::show::show(&settings, arg),
-        "toggle" => crate::toggle::toggle(settings, arg),
+        "show" => show::show(&settings, arg),
+        "toggle" => toggle::toggle(settings, arg),
         _ => {
             eprintln!("invalid command {}", command);
         }

@@ -9,8 +9,7 @@ mod files;
 mod io;
 mod prompt;
 mod settings;
-mod show;
-mod toggle;
+
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 

@@ -1,4 +1,13 @@
-use crate::{attempt::Attempt, settings::Settings};
+use clap::Command;
+
+use crate::{attempt::Attempt, command_about, settings::Settings};
+
+pub fn show_commands() -> Vec<Command> {
+    vec![
+        command_about!("path", "path to current assignment directory"),
+        command_about!("settings", "all the settings from this client"),
+    ]
+}
 
 pub fn show(settings: &Settings, arg: String) {
     let arg = arg.as_str();

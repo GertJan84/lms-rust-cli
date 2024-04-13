@@ -1,11 +1,11 @@
-mod download;
-mod grade;
-mod ide;
-mod logics;
-mod login;
-mod setups;
-mod show;
-mod toggle;
+pub mod download;
+pub mod grade;
+pub mod ide;
+pub mod logics;
+pub mod login;
+pub mod setups;
+pub mod show;
+pub mod toggle;
 
 use std::process::exit;
 

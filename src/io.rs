@@ -205,7 +205,7 @@ pub fn handle_upgrade() {
 
     match fs::copy(&new_compiled_exec.as_path(), lms_loc.join(exe_name)) {
         Ok(_) => {
-            println!("LMS updated to a new version: ");
+            println!("LMS updated to a new version");
         }
         Err(err) => {
             eprintln!("A error occurred: {}", err);

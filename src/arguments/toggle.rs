@@ -24,17 +24,14 @@ pub fn toggle_commands() -> Vec<Command> {
 
 pub fn toggle(settings: Settings, arg: String) {
     let key = arg.as_str();
-    let mut found = None;
-    for command in toggle_commands() {
-        if command.get_name() == key {
-            found = Some(key);
-            break;
-        }
-    }
 
-    match found {
-        Some(_) => toggle_setup(settings, key),
-        None => eprintln!("invalid subcommand {}", key),
+    if toggle_commands()
+        .iter()
+        .any(|command| command.get_name() == key)
+    {
+        toggle_setup(settings, key);
+    } else {
+        eprintln!("invalid subcommand {}", key);
     }
 }
 

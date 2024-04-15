@@ -5,7 +5,7 @@ version = "16.0.0"
 edition = "2021"
 description = "lms cli client written in rust"
 readme = "README.md"
-repository = "https://gitlab.com/gj-535479/lms-rust-cli"
+repository = "https://github.com/GertJan84/lms-rust-cli"
 
 [dependencies]
 clap = "4.5.1"

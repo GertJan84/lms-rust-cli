@@ -9,7 +9,7 @@ This isn't the official client for LMS.
 Run this in terminal.
 
 ```bash
-wget -qO- https://gitlab.com/gj-535479/lms-rust-cli/-/raw/main/install | python
+wget -qO- https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
 ```
 
 ### How to run

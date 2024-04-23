@@ -49,6 +49,7 @@ token=123
 [setup]
 move_node_directories=true
 enabled=true
+open_first_folder=false
 upload_open_browser=true
 check_todo=true
 

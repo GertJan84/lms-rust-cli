@@ -19,6 +19,12 @@ pub fn toggle_commands() -> Vec<Command> {
             "checks if there any TODO's in your files before uploading"
         )
         .short_flag('T'),
+
+        command_about!(
+            "open_first_folder",
+            "opens first empty folder (opens android-studio correctly)"
+        )
+        .short_flag('O'),
     ]
 }
 

@@ -1,6 +1,5 @@
 name: Build and Release
 
-
 on:
   push:
     branches:
@@ -13,6 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Get version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | cut -d '"' -f2)
+          echo "::set-output name=version::$VERSION"
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -20,7 +25,6 @@ jobs:
 
       - name: Build
         run: cargo build --release
-
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
@@ -39,3 +43,13 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/release/lms
+          asset_name: lms
+          asset_content_type: application/octet-stream

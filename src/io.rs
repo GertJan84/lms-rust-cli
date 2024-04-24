@@ -151,14 +151,17 @@ pub fn handle_upgrade() {
 
     if !Path::exists(&lms_loc) {
         if let Err(err) = fs::create_dir_all(&lms_loc) {
-            eprintln!("A error occurred: {}", err);
+            eprintln!("A error occurred with creating: {}", err);
             exit(1)
         }
     }
 
-    if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
+    if Path::exists(&lms_loc.join(exe_name)) {
+        println!("Removing old version");
+        if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
+            eprintln!("A error occurred with removing: {}", err);
+            exit(1)
+        }
     }
 
     // TODO: Check if macos is arm or intel

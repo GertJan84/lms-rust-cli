@@ -1,6 +1,6 @@
 extern crate glob;
 
-use arguments::show::show_commands;
+use arguments::{show::show_commands, toggle::toggle_commands};
 use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use std::env;
@@ -73,12 +73,7 @@ fn main() {
             .arg_required_else_help(true)
             )
         .subcommand(Command::new("toggle")
-            .subcommands([
-                Command::new("move_node_directories").short_flag('D').about("update your file structure so it matches correct"), 
-                Command::new("upload_open_browser").short_flag('B').about("upload the attempt and open an browser to that attempt"),
-                Command::new("check_todo").short_flag('T').about("upload the attempt and open an browser to that attempt")
-                ]
-            )
+            .subcommands(toggle_commands())
             .about("Toggle settings true or false")
             .arg_required_else_help(true)
             )

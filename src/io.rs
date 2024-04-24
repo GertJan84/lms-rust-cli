@@ -6,9 +6,9 @@ use reqwest::{
 };
 use serde_json::Value;
 use std::{
-    os::unix::fs::PermissionsExt,
     env, fs,
     io::Write,
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
@@ -164,7 +164,7 @@ pub fn handle_upgrade() {
     }
 
     // TODO: Check if macos is arm or intel
-    let plat = match env::consts::OS { 
+    let plat = match env::consts::OS {
         "linux" => "linux_64",
         "macos" => "mac_arm64",
         _ => {
@@ -172,10 +172,23 @@ pub fn handle_upgrade() {
             exit(1)
         }
     };
-    
-    // TODO: Use reqwest instant of wget 
-    execute_command("wget", vec!["-q", "-O", lms_loc.join("lms").to_str().unwrap(), format!("https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}", plat).as_str()]);
-    
-    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755)).expect("Faild to set permissions");
+
+    // TODO: Use reqwest instant of wget
+    execute_command(
+        "wget",
+        vec![
+            "-q",
+            "-O",
+            lms_loc.join("lms").to_str().unwrap(),
+            format!(
+                "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}",
+                plat
+            )
+            .as_str(),
+        ],
+    );
+
+    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755))
+        .expect("Faild to set permissions");
     println!("Installed");
 }

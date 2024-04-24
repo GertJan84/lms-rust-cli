@@ -8,6 +8,7 @@ import platform
 
 REPO_URL = "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms"
 
+
 def die(message: str) -> NoReturn:
     """
     Quit program with error.
@@ -56,6 +57,7 @@ def execute(commands: list[str], err_message: str) -> None:
     if process_exe == 1:  # type: ignore
         die(err_message)
 
+
 def is_installed(command: str, err_message: str) -> None | NoReturn:
     if not shutil.which(command):
         die(err_message)
@@ -91,7 +93,9 @@ def main():
 
     lprint("Downloading")
     os.makedirs(bin_dir, exist_ok=True)
-    execute(["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget")
+    execute(
+        ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget"
+    )
     os.chmod(install_mod, 755)
 
     print(" done")
@@ -102,6 +106,7 @@ def main():
             print("  Add this before running lms")
 
     print("\nInstallation complete")
+
 
 if __name__ == "__main__":
     main()

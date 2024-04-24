@@ -6,7 +6,7 @@ from typing import NoReturn
 import subprocess
 import platform
 
-REPO_URL = "https://github.com/GertJan84/lms-rust-cli/releases/latest/download/lms"
+REPO_URL = "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms"
 
 def die(message: str) -> NoReturn:
     """
@@ -76,20 +76,24 @@ def main():
 
     exe_name = ""
 
-    match platform.system():
-        case "Darwin":
+    match platform.system().lower():
+        case "darwin":
             exe_name = "mac_arm64"
         case "linux":
             exe_name = "linux_64"
         case _:
             die(f"Your platform is not supported :{platform.system()}")
 
-    is_installed("curl", "You need to have curl installed")
+    is_installed("wget", "You need to have wget installed")
+
+    bin_dir = os.path.expanduser("~/.local/bin")
+    install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
-    os.makedirs(os.path.expanduser("~/.local/bin"), exist_ok=True)
+    os.makedirs(bin_dir, exist_ok=True)
+    execute(["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget")
+    os.chmod(install_mod, 755)
 
-    execute(["curl", f"{REPO_URL}_{exe_name}", "-o", "~/.local/bin"], "Cant find curl")
     print(" done")
 
     if path := os.getenv("PATH"):  # noqa: SIM102

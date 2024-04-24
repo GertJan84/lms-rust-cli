@@ -1,10 +1,12 @@
 use crate::files;
+
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
 };
 use serde_json::Value;
 use std::{
+    os::unix::fs::PermissionsExt,
     env, fs,
     io::Write,
     path::{Path, PathBuf},
@@ -140,42 +142,9 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
 }
 
 pub fn handle_upgrade() {
-    let repo_url = env!("CARGO_PKG_REPOSITORY");
     let exe_name = "lms";
-    let tmp_loc = Path::new("/tmp/lms_rust");
 
     println!("Current version: {}", env!("CARGO_PKG_VERSION"));
-
-    if !is_installed("git") {
-        eprintln!("Git it not installed");
-        exit(1)
-    }
-
-    if Path::exists(&tmp_loc) {
-        if let Err(err) = fs::remove_dir_all(tmp_loc) {
-            eprintln!("Can't remove tmp folder: {}", err)
-        }
-    }
-
-    if let Err(err) = fs::create_dir_all(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
-
-    execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
-
-    if files::is_folder_empty(&tmp_loc.to_path_buf()) {
-        eprintln!("Can't clone new version");
-        exit(1)
-    }
-
-    println!("Cloned new version");
-    if let Err(err) = env::set_current_dir(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
-
-    execute_command("cargo", vec!["build", "--release", "--quiet"]);
 
     let mut lms_loc = PathBuf::new();
     lms_loc.push(env::var("HOME").unwrap());
@@ -189,32 +158,24 @@ pub fn handle_upgrade() {
         }
     }
 
-    let new_compiled_exec = tmp_loc.join("target").join("release").join(exe_name);
-
-    if !Path::exists(&new_compiled_exec.as_path()) {
-        eprintln!("Can't find new compiled lms");
-        exit(1);
-    }
-
-    println!("Compiled new version");
-
     if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
         eprintln!("A error occurred: {}", err);
         exit(1)
     }
 
-    match fs::copy(&new_compiled_exec.as_path(), lms_loc.join(exe_name)) {
-        Ok(_) => {
-            println!("LMS updated to a new version");
-        }
-        Err(err) => {
-            eprintln!("A error occurred: {}", err);
+    // TODO: Check if macos is arm or intel
+    let plat = match env::consts::OS { 
+        "linux" => "linux_64",
+        "macos" => "mac_arm64",
+        _ => {
+            eprintln!("Your platform is not supported");
             exit(1)
         }
-    }
-
-    if let Err(err) = fs::remove_dir_all(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
+    };
+    
+    // TODO: Use reqwest instant of wget 
+    execute_command("wget", vec!["-q", "-O", lms_loc.join("lms").to_str().unwrap(), format!("https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}", plat).as_str()]);
+    
+    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755)).expect("Faild to set permissions");
+    println!("Installed");
 }

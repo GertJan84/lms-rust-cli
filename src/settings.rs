@@ -1,19 +1,17 @@
-use std::path::{Path, PathBuf};
+use configparser::ini::{Ini, WriteOptions};
 use std::env;
-use configparser::ini::Ini;
+use std::path::{Path, PathBuf};
 
 const FALLBACK: [&str; 4] = ["nvim", "code", "vscode", "codium"];
 
 pub struct Settings {
-    pub config: Ini,
+    config: Ini,
     config_path: PathBuf,
     pub editors: Vec<String>,
 }
 
-
 impl Settings {
     pub fn new() -> Self {
-
         let mut config = Ini::new();
         let mut config_path = PathBuf::new();
 
@@ -46,11 +44,23 @@ impl Settings {
         }
     }
 
-    pub fn get_setting(&self, section: &str, key: &str, default: bool) -> bool {
+    pub fn get_token(&self) -> String {
+        self.config.get("auth", "token").unwrap()
+    }
+
+    pub fn get_bool(&self, section: &str, key: &str, default: bool) -> bool {
         self.config
             .getbool(section, key)
             .unwrap()
             .unwrap_or(default)
+    }
+
+    pub fn get_string(&self, section: &str, key: &str, default: String) -> String {
+        self.config.get(section, key).unwrap_or(default)
+    }
+
+    pub fn pretty_print(&self) -> String {
+        self.config.pretty_writes(&WriteOptions::default())
     }
 
     pub fn set(&mut self, category: String, name: String, value: String) {

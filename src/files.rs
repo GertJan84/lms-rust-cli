@@ -1,6 +1,11 @@
-use std::{collections::{HashSet, HashMap}, env, fs, path::{Path, PathBuf}, process::exit};
-use glob::glob;
 use crate::io;
+use glob::glob;
+use std::{
+    collections::{HashMap, HashSet},
+    env, fs,
+    path::{Path, PathBuf},
+    process::exit,
+};
 
 pub fn get_lms_dir() -> PathBuf {
     let mut lms_dir = PathBuf::new();
@@ -10,27 +15,32 @@ pub fn get_lms_dir() -> PathBuf {
     lms_dir
 }
 
-pub fn is_folder_empty(path: &PathBuf) -> std::io::Result<bool> {
-    let dir_entries = fs::read_dir(path)?;
-
-    for _ in dir_entries {
-        return Ok(false)
+pub fn is_folder_empty(path: &PathBuf) -> bool {
+    if !Path::exists(&path) {
+        return false;
     }
 
-    Ok(true)
+    if let Ok(dir_entries) = fs::read_dir(path) {
+        for _ in dir_entries {
+            return false;
+        }
+        return true;
+    }
+
+    false
 }
 
 pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
     let lms_dir = get_lms_dir().join("*");
     let mut empty_dirs: HashSet<PathBuf> = HashSet::new();
 
-    for dir in glob(lms_dir.to_str().unwrap()).expect("Faild to read lms dir") {
+    for dir in glob(lms_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         if let Ok(path) = dir {
             if !path.is_dir() {
                 continue;
             }
 
-            if !is_folder_empty(&path).unwrap_or(false) {
+            if !is_folder_empty(&path) {
                 continue;
             }
 
@@ -48,26 +58,23 @@ pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
 pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
     let lms_dir = get_lms_dir();
 
-    let correct_paths_json = match io::request(
-        "GET",
-        "/api/node-paths".to_string(),
-        &"".to_string(),
-        None,
-        true,
-    ) {
-        Some(data) => io::response_to_json(data),
-        None => {
-            eprintln!("Cant convert paths to json");
-            exit(1)
-        }
-    };
+    let correct_paths_json =
+        match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
+            Some(data) => io::response_to_json(data),
+            None => {
+                eprintln!("Cant convert paths to json");
+                exit(1)
+            }
+        };
 
     let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();
 
     let target_dir = lms_dir.join("*/*");
     // Get all directories in lms [python, pwa, static-web, ..etc]
-    
-    let correct_nodes = &correct_paths_json.as_array().unwrap()[0].as_object().unwrap();
+
+    let correct_nodes = &correct_paths_json.as_array().unwrap()[0]
+        .as_object()
+        .unwrap();
     for dir in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
 

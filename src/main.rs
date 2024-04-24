@@ -1,5 +1,6 @@
 extern crate glob;
 
+use arguments::{show::show_commands, toggle::toggle_commands};
 use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use std::env;
@@ -9,7 +10,6 @@ mod files;
 mod io;
 mod prompt;
 mod settings;
-mod show;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
@@ -68,14 +68,15 @@ fn main() {
                 )
             )
         .subcommand(Command::new("show")
-            .subcommands([
-                Command::new("path").about("path to current assignment directory"), 
-                Command::new("settings").about("all the settings from this client")
-                ]
-            )
+            .subcommands(show_commands())
             .about("Show info from the client")
             .arg_required_else_help(true)
-        )
+            )
+        .subcommand(Command::new("toggle")
+            .subcommands(toggle_commands())
+            .about("Toggle settings true or false")
+            .arg_required_else_help(true)
+            )
 
         .get_matches();
 
@@ -94,7 +95,12 @@ fn main() {
                 "grade",
                 arg.get_one::<String>("short_name").unwrap().to_string(),
             ),
-            ("show", sub_command) => arguments::execute("show", sub_command.subcommand_name().unwrap().to_string()),
+            ("show", sub_command) => {
+                arguments::execute("show", sub_command.subcommand_name().unwrap().to_string())
+            }
+            ("toggle", sub_command) => {
+                arguments::execute("toggle", sub_command.subcommand_name().unwrap().to_string())
+            }
             _ => eprintln!("Invalid command"),
         },
         _ => eprintln!("Error"),

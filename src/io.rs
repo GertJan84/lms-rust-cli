@@ -1,21 +1,26 @@
+use crate::files;
+
+use reqwest::{
+    blocking::{Client, Response},
+    StatusCode,
+};
 use serde_json::Value;
 use std::{
-    path::{Path, PathBuf},
+    os::unix::fs::PermissionsExt,
+    env, fs,
     io::Write,
-    process::{Command, Stdio, exit},
-    env,
-    fs
-};
-use reqwest::{
-    blocking::{Response, Client},
-    StatusCode
+    path::{Path, PathBuf},
+    process::{exit, Command, Stdio},
 };
 
 // use crate::CLI_VERSION;
 
-
-pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>, recursive: bool) -> Option<Response>  {
-
+pub fn request(
+    method: &str,
+    path: String,
+    token: &String,
+    data: Option<Vec<u8>>,
+) -> Option<Response> {
     let url = if path.contains("?") {
         format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
     } else {
@@ -26,50 +31,42 @@ pub fn request(method: &str, path: String, token: &String, data: Option<Vec<u8>>
 
     let res = match method {
         "GET" => client.get(url).header("authorization", token).send(),
-        "POST" => client.post(url).header("authorization", token).body(data.clone().unwrap()).send(),
-        _=> {
+        "POST" => client
+            .post(url)
+            .header("authorization", token)
+            .body(data.clone().unwrap())
+            .send(),
+        _ => {
             eprintln!("Invalid method: {}", method);
             exit(1)
         }
     };
 
-
     match res {
-        Ok(res) => {
-            match res.status() {
-                StatusCode::OK => {
-                    Some(res)
-                }
+        Ok(res) => match res.status() {
+            StatusCode::OK => Some(res),
 
-                StatusCode::UNAUTHORIZED => {
-                    eprintln!("You are not logged in");
-                    exit(1)
-                }
-
-                StatusCode::FORBIDDEN => {
-                    eprintln!("You don't have the right to access this");
-                    exit(1)
-                }
-
-
-                StatusCode::IM_A_TEAPOT => {
-                    println!("Updating client ...");
-                    handle_upgrade();
-                    println!("done");
-                    if recursive {
-                        return request(method, path,  token, data, false)
-                    }
-                    eprintln!("The server doesn't acknowledge the update. And idk why");
-                    exit(1)
-                }
-                _ => {
-                    eprintln!("Server status not handled: {:?}", res.status());
-                    exit(1);
-                }
-
+            StatusCode::UNAUTHORIZED => {
+                eprintln!("You are not logged in");
+                exit(1)
             }
 
-        }
+            StatusCode::FORBIDDEN => {
+                eprintln!("You don't have the right to access this");
+                exit(1)
+            }
+
+            StatusCode::IM_A_TEAPOT => {
+                println!("Updating client ...");
+                handle_upgrade();
+                println!("done");
+                exit(0)
+            }
+            _ => {
+                eprintln!("Server status not handled: {:?}", res.status());
+                exit(1);
+            }
+        },
         Err(_) => {
             println!("Request failed because the client is offline");
             None
@@ -98,12 +95,12 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .expect("Can't find which")
+        .expect("error on executing command")
         .success();
 }
 
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
-    let res = request("GET", path, token, None, true);
+    let res = request("GET", path, token, None);
 
     let cmd = if cfg!(target_os = "macos") {
         "gtar"
@@ -112,7 +109,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     };
 
     if res.is_none() {
-        return
+        return;
     }
 
     let mut tar_process = Command::new(cmd)
@@ -124,18 +121,15 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
         .expect("Failed to start tar process");
 
     match tar_process.stdin.take() {
-        Some(mut stdin) => {
-            match res {
-                Some(mut unwrap_res) => {
-                    let mut res_body = vec![];
-                    let _ = unwrap_res.copy_to(&mut res_body);
-                    let _ = stdin.write(&res_body);
-
-                }
-                None => {
-                    eprintln!("Warning: Got no response from server");
-                    exit(1)
-                }
+        Some(mut stdin) => match res {
+            Some(mut unwrap_res) => {
+                let mut res_body = vec![];
+                let _ = unwrap_res.copy_to(&mut res_body);
+                let _ = stdin.write(&res_body);
+            }
+            None => {
+                eprintln!("Warning: Got no response from server");
+                exit(1)
             }
         },
         None => {
@@ -147,40 +141,10 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     drop(tar_process)
 }
 
-
 pub fn handle_upgrade() {
-
-    let repo_url = env!("CARGO_PKG_REPOSITORY");
     let exe_name = "lms";
-    let tmp_loc = Path::new("/tmp/lms_rust");
 
     println!("Current version: {}", env!("CARGO_PKG_VERSION"));
-
-    if !is_installed("git") {
-        eprintln!("Git it not installed");
-        exit(1)
-    }
-
-    if Path::exists(&tmp_loc) {
-        if let Err(err) = fs::remove_dir_all(tmp_loc) {
-            eprintln!("Can't remove tmp folder: {}", err)
-        }
-    }
-
-    if let Err(err) = fs::create_dir_all(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
-
-    execute_command("git", vec!["clone", repo_url, tmp_loc.to_str().unwrap()]);
-    println!("Cloned new version");
-    if let Err(err) = env::set_current_dir(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
-
-    execute_command("cargo", vec!["build", "--release", "--quiet"]);
-    println!("Compiled new version");
 
     let mut lms_loc = PathBuf::new();
     lms_loc.push(env::var("HOME").unwrap());
@@ -199,21 +163,19 @@ pub fn handle_upgrade() {
         exit(1)
     }
 
-
-    match fs::copy(tmp_loc.join("target").join("release").join(exe_name).as_path(), lms_loc.join(exe_name)) {
-        Ok(_) => {
-            println!("LMS updated to version: {}", env!("CARGO_PKG_VERSION"));
-        }
-        Err(err) => {
-            eprintln!("A error occurred: {}", err);
+    // TODO: Check if macos is arm or intel
+    let plat = match env::consts::OS { 
+        "linux" => "linux_64",
+        "macos" => "mac_arm64",
+        _ => {
+            eprintln!("Your platform is not supported");
             exit(1)
         }
-    }
-        
-
-    if let Err(err) = fs::remove_dir_all(tmp_loc) {
-        eprintln!("A error occurred: {}", err);
-        exit(1)
-    }
-
+    };
+    
+    // TODO: Use reqwest instant of wget 
+    execute_command("wget", vec!["-q", "-O", lms_loc.join("lms").to_str().unwrap(), format!("https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}", plat).as_str()]);
+    
+    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755)).expect("Faild to set permissions");
+    println!("Installed");
 }

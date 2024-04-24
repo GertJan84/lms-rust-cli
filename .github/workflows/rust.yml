@@ -1,0 +1,75 @@
+name: release and build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_url: ${{ steps.create_task_release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | cut -d '"' -f2)
+          echo "::set-output name=version::$VERSION"
+
+      - name: create release
+        id: create_task_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REL_URL: ${{ steps.create_task_release.outputs.upload_url }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+
+  build:
+    needs: create_release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: lms_linux_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: lms_mac_arm64
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+
+      - name: build
+        run: cargo build --release --target=${{ matrix.target }}
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/lms
+
+      - name: upload release assets
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.release_url }}  
+          asset_path: target/${{ matrix.target }}/release/lms
+          asset_name: ${{ matrix.artifact_name }}
+          asset_content_type: application/octet-stream
+

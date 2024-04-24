@@ -4,17 +4,9 @@ import os
 import shutil
 from typing import NoReturn
 import subprocess
+import platform
 
-REPO_URL = "https://gitlab.com/gj-535479/lms-rust-cli"
-EXE_NAME = "lms"
-TMP_LOC = "/tmp/lms_rust"
-
-
-REQUIRED_INSTALLED = {
-    "git": "git",
-    "cargo": "rustup"
-}
-
+REPO_URL = "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms"
 
 def die(message: str) -> NoReturn:
     """
@@ -37,7 +29,7 @@ def lprint(message: str) -> None:
     print(f"{message} ...", end="", flush=True)
 
 
-def execute(commands: list[str], errMessage: str) -> None:
+def execute(commands: list[str], err_message: str) -> None:
     """
     Execute a list of commands.
 
@@ -61,16 +53,16 @@ def execute(commands: list[str], errMessage: str) -> None:
         check=False,
     )
 
-    if process_exe == 1:
-        die(errMessage)
+    if process_exe == 1:  # type: ignore
+        die(err_message)
 
-def is_installed(command: str, errMessage: str) -> None | NoReturn:
+def is_installed(command: str, err_message: str) -> None | NoReturn:
     if not shutil.which(command):
-        die(errMessage)
+        die(err_message)
+
 
 def main():
-
-    print(f"""
+    print(r"""
                              /$$       /$$      /$$  /$$$$$$ 
                             | $$      | $$$    /$$$ /$$__  $$
                             | $$      | $$$$  /$$$$| $$  \__/
@@ -80,38 +72,31 @@ def main():
                             | $$$$$$$$| $$ \/  | $$|  $$$$$$/
                             |________/|__/     |__/ \______/ 
                                  
-                                 
-                                
-To install lms-rust you need to have: 
-{[program for program in REQUIRED_INSTALLED.keys()]} installed.
     """)
 
-    for program, install_method in REQUIRED_INSTALLED.items():
-        is_installed(program, f"You don't have {install_method.title()} installed. Please install {install_method.title()}.")
+    exe_name = ""
 
-    if os.path.exists(TMP_LOC):
-        shutil.rmtree(TMP_LOC)
+    match platform.system().lower():
+        case "darwin":
+            exe_name = "mac_arm64"
+        case "linux":
+            exe_name = "linux_64"
+        case _:
+            die(f"Your platform is not supported :{platform.system()}")
+
+    is_installed("wget", "You need to have wget installed")
+
+    bin_dir = os.path.expanduser("~/.local/bin")
+    install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
-    os.makedirs(TMP_LOC, exist_ok=True)
-    execute(["git", "clone", REPO_URL, TMP_LOC], "Error occurred during downloading.")
+    os.makedirs(bin_dir, exist_ok=True)
+    execute(["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget")
+    os.chmod(install_mod, 755)
+
     print(" done")
 
-    lprint("Compiling")
-    os.chdir(TMP_LOC)
-    execute(["cargo", "build", "--release", "--quiet"], "Error occurred during compilation.")
-    print(" done")
-
-    lprint("Organizing file system")
-    os.makedirs(os.path.expanduser("~/.local/bin"), exist_ok=True)
-    shutil.copy(
-        os.path.join(TMP_LOC, "target", "release", EXE_NAME),
-        os.path.expanduser(f"~/.local/bin/{EXE_NAME}"),
-    )
-    shutil.rmtree(TMP_LOC, ignore_errors=True)
-    print(" done")
-   
-    if path := os.getenv("PATH"):
+    if path := os.getenv("PATH"):  # noqa: SIM102
         if os.path.expanduser("~/.local/bin") not in path:
             print("This system doesn't have $HOME/.local/bin in its PATH.")
             print("  Add this before running lms")

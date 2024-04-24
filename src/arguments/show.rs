@@ -1,7 +1,13 @@
-use configparser::ini::WriteOptions;
+use clap::Command;
 
 use crate::{attempt::Attempt, settings::Settings};
 
+pub fn show_commands() -> Vec<Command> {
+    vec![
+        Command::new("path").about("path to current assignment directory"),
+        Command::new("settings").about("all the settings from this client"),
+    ]
+}
 
 pub fn show(settings: &Settings, arg: String) {
     let arg = arg.as_str();
@@ -24,7 +30,5 @@ fn show_path(settings: &Settings) {
 }
 
 fn show_settings(settings: &Settings) {
-    let binding = settings.config.pretty_writes(&WriteOptions::default());
-    let settings_str = binding.as_str();
-    println!("{}", settings_str);
+    println!("{}", settings.pretty_print().as_str())
 }

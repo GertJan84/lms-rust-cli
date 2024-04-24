@@ -1,5 +1,6 @@
 extern crate glob;
 
+use arguments::show::show_commands;
 use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use std::env;
@@ -67,11 +68,7 @@ fn main() {
                 )
             )
         .subcommand(Command::new("show")
-            .subcommands([
-                Command::new("path").about("path to current assignment directory"), 
-                Command::new("settings").about("all the settings from this client")
-                ]
-            )
+            .subcommands(show_commands())
             .about("Show info from the client")
             .arg_required_else_help(true)
             )

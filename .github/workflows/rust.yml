@@ -1,4 +1,4 @@
-name: Build and Release
+name: release and build
 
 on:
   push:
@@ -6,6 +6,30 @@ on:
       - devops
 
 jobs:
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: download all artifacts
+        uses: actions/download-artifact@v2
+
+      - name: get version from cargo.toml
+        id: get_version
+        run: |
+          version=$(grep '^version' cargo.toml | cut -d '"' -f2)
+          echo "::set-output name=version::$version"
+
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          github_token: ${{ secrets.github_token }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -21,52 +45,28 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get version from Cargo.toml
-        id: get_version
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | cut -d '"' -f2)
-          echo "::set-output name=version::$VERSION"
-
-      - name: Install Rust
+      - name: install rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: ${{ matrix.target }}
 
-      - name: Build
+      - name: build
         run: cargo build --release --target=${{ matrix.target }}
 
-      - name: Upload artifact
+      - name: upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}
           path: target/${{ matrix.target }}/release/lms
-
-  create_release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v2
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release v${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Assets
+      - name: upload release assets
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.github_token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ matrix.artifact_name }}
           asset_name: ${{ matrix.artifact_name }}
           asset_content_type: application/octet-stream
+

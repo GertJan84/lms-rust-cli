@@ -1,11 +1,11 @@
 use clap::Command;
 
-use crate::{attempt::Attempt, command_about, settings::Settings};
+use crate::{attempt::Attempt, settings::Settings};
 
 pub fn show_commands() -> Vec<Command> {
     vec![
-        command_about!("path", "path to current assignment directory"),
-        command_about!("settings", "all the settings from this client"),
+        Command::new("path").about("path to current assignment directory"),
+        Command::new("settings").about("all the settings from this client"),
     ]
 }
 

@@ -3,9 +3,6 @@ extern crate glob;
 use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use std::env;
-
-use crate::arguments::{show::show_commands, toggle::toggle_commands};
-
 mod arguments;
 mod attempt;
 mod files;
@@ -13,58 +10,92 @@ mod io;
 mod prompt;
 mod settings;
 
-#[macro_use]
-mod macros;
-
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
 pub static BASE_URL: Lazy<String> =
     Lazy::new(|| env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string()));
 
 fn main() {
-    let mut cmd = Command::new("lms")
+    let cmd = Command::new("lms")
         .bin_name("lms")
         .about("LMS Command Line Interface")
         .version(env!("CARGO_PKG_VERSION"))
+        .subcommand_required(true)
         .arg_required_else_help(true)
-        .subcommand_required(true);
+        .subcommand(
+            Command::new("login")
+                .about("Connect to your sd42.nl account")
+            )
+        .subcommand(
+            Command::new("update")
+                .about("Upgrade lms")
+            )
+        .subcommand(
+            Command::new("upload")
+                .about("Upload your work for the current assignment")
+            )
+        .subcommand(
+            Command::new("open")
+                .about("Open the current assignment in the IDE")
+            )
+        .subcommand(
+            Command::new("verify")
+                .about("Verify the integrity of your lms directory")
+            )
+        .subcommand(
+            Command::new("template")
+                .about("Download the current assignment template")
+            )
+        .subcommand(
+            Command::new("download")
+                .about("Download submitted attempts or all attempts")
+                .arg(
+                    Arg::new("id")
+                        .help("The node id optional followed by a '~' and a attempt number or 'all' to download all attempts")
+                        .num_args(1)
+                        .required(true)
+                )
+            )
+        .subcommand(
+            Command::new("grade")
+                .about("Teachers only: download everything needed for grading")
+                .arg(
+                    Arg::new("short_name")
+                        .help("The student's short name optional followed by '@' the node id and '~' attempt number ")
+                        .num_args(1)
+                        .required(true)
+                )
+            )
+        .subcommand(Command::new("show")
+            .subcommands([
+                Command::new("path").about("path to current assignment directory"), 
+                Command::new("settings").about("all the settings from this client")
+                ]
+            )
+            .about("Show info from the client")
+            .arg_required_else_help(true)
+            )
+        .subcommand(Command::new("toggle")
+            .subcommands([
+                Command::new("move_node_directories").short_flag('D').about("update your file structure so it matches correct"), 
+                Command::new("upload_open_browser").short_flag('B').about("upload the attempt and open an browser to that attempt"),
+                Command::new("check_todo").short_flag('T').about("upload the attempt and open an browser to that attempt")
+                ]
+            )
+            .about("Toggle settings true or false")
+            .arg_required_else_help(true)
+            )
 
-    // Subcommands explanations can be found by the subcommand macro
-    sub_command!(
-        cmd,
-        "grade",
-        "Teachers only: download everything needed for grading",
-        "short_name",
-        "The student's short name optional followed by '@' the node id and '~' attempt number",
-        1,
-        true
-    );
-    sub_command!(
-        cmd,
-        "download", 
-        "Download submitted attempts or all attempts", 
-        "id", 
-        "The node id optional followed by a '~' and a attempt number or 'all' to download all attempts",
-        1,
-        true
-    );
-    sub_command!(cmd, "open", "Open the current assignment in the IDE");
-    sub_command!(cmd, "login", "Connect to your sd42.nl account");
-    sub_command!(cmd, "update", "Upgrade lms");
-    sub_command!(cmd, "upload", "Upload your work for the current assignment");
-    sub_command!(cmd, "verify", "Verify the integrity of your lms directory");
-    sub_command!(cmd, "template", "Download the current assignment template");
-    sub_command!(cmd, "show", "Show info from the client", show_commands());
-    sub_command!(cmd, "toggle", "Toggle boolean settings", toggle_commands());
+        .get_matches();
 
-    match cmd.get_matches().subcommand() {
+    match cmd.subcommand() {
         Some(subcommand) => match subcommand {
-            ("open", _)
-            | ("login", _)
-            | ("update", _)
-            | ("upload", _)
-            | ("verify", _)
-            | ("template", _) => arguments::execute(subcommand.0, "".to_string()),
+            ("open", _) => arguments::execute("open", "".to_string()),
+            ("login", _) => arguments::execute("login", "".to_string()),
+            ("update", _) => arguments::execute("update", "".to_string()),
+            ("upload", _) => arguments::execute("upload", "".to_string()),
+            ("verify", _) => arguments::execute("verify", "".to_string()),
+            ("template", _) => arguments::execute("template", "".to_string()),
             ("download", arg) => {
                 arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string())
             }

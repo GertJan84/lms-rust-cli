@@ -7,7 +7,6 @@ on:
 
 jobs:
   create_release:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: download all artifacts
@@ -31,6 +30,7 @@ jobs:
           prerelease: false
 
   build:
+    needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

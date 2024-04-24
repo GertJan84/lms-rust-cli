@@ -7,7 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: lms_linux_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: lms_mac_arm64
 
     steps:
       - uses: actions/checkout@v2
@@ -22,15 +31,16 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release
+        run: cargo build --release --target=${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: lms
-          path: target/release/lms
+          name: ${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/lms
 
       - name: Create Release
         id: create_release
@@ -50,6 +60,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/release/lms
-          asset_name: lms
+          asset_path: target/${{ matrix.target }}/release/lms
+          asset_name: ${{ matrix.artifact_name }}
           asset_content_type: application/octet-stream

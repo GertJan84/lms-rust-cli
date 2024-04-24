@@ -1,10 +1,9 @@
-
 name: release and build
 
 on:
   push:
     branches:
-      - devops
+      - main
 
 jobs:
   create_release:

@@ -56,6 +56,7 @@ def execute(commands: list[str], err_message: str) -> None:
     if process_exe == 1:  # type: ignore
         die(err_message)
 
+
 def is_installed(command: str, err_message: str) -> None | NoReturn:
     if not shutil.which(command):
         die(err_message)

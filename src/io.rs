@@ -4,7 +4,8 @@ use reqwest::{
 };
 use serde_json::Value;
 use std::{
-    env, fs,
+    env,
+    fs::{self, File},
     io::Write,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
@@ -174,22 +175,24 @@ pub fn handle_upgrade() {
         }
     };
 
-    // TODO: Use reqwest instant of wget
-    execute_command(
-        "wget",
-        vec![
-            "-q",
-            "-O",
-            lms_loc.join("lms").to_str().unwrap(),
-            format!(
-                "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}",
-                plat
-            )
-            .as_str(),
-        ],
-    );
+    let mut response = reqwest::blocking::get(format!(
+        "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}",
+        plat
+    ))
+    .expect("request failed");
+
+    if !response.status().is_success() {
+        eprintln!("Failed to download lms");
+        exit(1)
+    }
+
+    let mut file = File::create(lms_loc.join("lms")).expect("failed to create file");
+    response
+        .copy_to(&mut file)
+        .expect("failed to write to file");
 
     fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755))
         .expect("Failed to set permissions");
+
     println!("Installed");
 }

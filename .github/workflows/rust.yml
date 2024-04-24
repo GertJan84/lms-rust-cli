@@ -3,7 +3,7 @@ name: release and build
 on:
   push:
     branches:
-      - main
+      - nightly
 
 jobs:
   create_release:

@@ -1,5 +1,3 @@
-use crate::files;
-
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
@@ -167,8 +165,8 @@ pub fn handle_upgrade() {
     let plat = match env::consts::OS {
         "linux" => "linux_64",
         "macos" => "mac_arm64",
-        _ => {
-            eprintln!("Your platform is not supported");
+        platform => {
+            eprintln!("Your platform is not supported - {}", platform);
             exit(1)
         }
     };
@@ -189,6 +187,6 @@ pub fn handle_upgrade() {
     );
 
     fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755))
-        .expect("Faild to set permissions");
+        .expect("Failed to set permissions");
     println!("Installed");
 }

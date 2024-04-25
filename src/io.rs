@@ -14,6 +14,9 @@ use std::{
 
 // use crate::CLI_VERSION;
 
+
+const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
+
 pub fn request(
     method: &str,
     path: String,
@@ -163,6 +166,13 @@ pub fn handle_upgrade() {
             eprintln!("A error occurred with removing: {}", err);
             exit(1)
         }
+    }
+
+    let architecture = std::env::consts::ARCH;
+
+    if !SUPPORTED_ARCHITECTURES.contains(&architecture) {
+        eprintln!("{} processor is not supported", &architecture);
+        exit(1)
     }
 
     // TODO: Check if macos is arm or intel

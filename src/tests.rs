@@ -1,8 +1,8 @@
 use crate::settings::Settings;
 
 /// Create a new Settings object with some test values
-/// Dead code because it's only used in tests
-#[warn(dead_code)]
+/// Dead code allowed because it's only used in tests
+#[allow(dead_code)]
 pub fn create_test_settings() -> Settings {
     let mut settings = Settings::new();
     settings.set("auth".to_string(), "token".to_string(), "token".to_string());

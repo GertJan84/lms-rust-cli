@@ -25,7 +25,7 @@ Just use `lms` as usual
 - [x] Grade work
 - [x] Login
 - [x] Open work dir
-- [ ] Handle setup
+- [x] Handle setup
 
 ### Extra features
 
@@ -33,10 +33,10 @@ Just use `lms` as usual
 - [x] Open work offline
 - [x] Download all assignments
 - [x] Check for todo's in your code before upload for "sql", "rs", "py", "js", "css", "html", "svelte"
-- [ ] Add set command for config changes
-- [ ] Add get command to verify config changes
+- [x] Add set command for config changes
+- [x] Add get command to verify config changes
 
-Available for `aarch64` and `x86_64` systems
+Available for `arch64` and `x86_64` systems
 
 ### Settings example
 
@@ -65,5 +65,6 @@ If the option is not in your `lms.ini` file it will be set to true automatically
 `lms toggle <option>|<flag>` to toggle. The correct setup can be called by there full name or there flag.
 
 `move_node_directories` or `-D`: Moves the directories if they are on the wrong place in your system.
-`upload_open_browser` or `-B`: Opens an browser to the correct attempt what you want to upload.
+`upload_open_browser` or `-B`: Opens an browser to the current assignment LMS webpage.
 `check_todo` or `-T`: Checks if there are any todo's in the current files and will ask it.
+`open_first_folder` or `-O`: Opens the first and only unhidden folder in the attempt (useful for opening Android Studio)

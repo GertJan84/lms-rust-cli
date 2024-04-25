@@ -17,7 +17,12 @@ impl Settings {
 
         config_path.push(env::var("HOME").unwrap());
         config_path.push(".config");
-        config_path.push("lms.ini");
+
+        if cfg!(test) {
+            config_path.push("lms_test.ini");
+        } else {
+            config_path.push("lms.ini");
+        }
 
         let mut editors: Vec<String> = Vec::new();
 
@@ -70,5 +75,87 @@ impl Settings {
         } else {
             panic!("No lms.ini found")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::create_test_settings;
+
+    #[test]
+    fn test_new_settings() {
+        let settings = create_test_settings();
+        assert_eq!(settings.editors, FALLBACK.to_vec());
+    }
+
+    #[test]
+    fn test_get_token() {
+        let settings = create_test_settings();
+        assert_eq!(settings.get_token(), "token");
+    }
+
+    #[test]
+    fn test_get_bool() {
+        let settings = create_test_settings();
+        assert_eq!(settings.get_bool("setup", "check_todo", false), true);
+    }
+
+    #[test]
+    fn test_get_string() {
+        let settings = create_test_settings();
+        assert_eq!(
+            settings.get_string("auth", "token", "default".to_string()),
+            "token"
+        );
+    }
+
+    #[test]
+    fn test_pretty_print() {
+        let settings = create_test_settings();
+        // The order of the lines is not guaranteed, so we sort them
+        let expected = "[auth]\ntoken=token\n[setup]\ncheck_todo=true\n"
+            .lines()
+            .collect::<Vec<_>>()
+            .sort();
+
+        let binding = settings.pretty_print();
+        let actual = binding.lines().collect::<Vec<_>>().sort();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_set_string() {
+        let mut settings = create_test_settings();
+        settings.set(
+            "auth".to_string(),
+            "token".to_string(),
+            "new_token".to_string(),
+        );
+        assert_eq!(
+            settings.get_string("auth", "token", "default".to_string()),
+            "new_token"
+        );
+    }
+
+    #[test]
+    fn test_set_bool() {
+        let mut settings = create_test_settings();
+        settings.set(
+            "setup".to_string(),
+            "check_todo".to_string(),
+            "false".to_string(),
+        );
+        assert_eq!(settings.get_bool("setup", "check_todo", false), false);
+    }
+
+    #[test]
+    fn test_set_default() {
+        let settings = create_test_settings();
+        assert_eq!(
+            settings.get_string("setup", "new_key", "default".to_string()),
+            "default"
+        );
     }
 }

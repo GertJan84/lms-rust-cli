@@ -36,7 +36,7 @@ Just use `lms` as usual
 - [x] Add set command for config changes
 - [x] Add get command to verify config changes
 
-Available for `arch64` and `x86_64` systems
+Available for `Aarch64` and `x86_64` systems
 
 ### Settings example
 

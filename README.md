@@ -64,7 +64,9 @@ If the option is not in your `lms.ini` file it will be set to true automatically
 
 `lms toggle <option>|<flag>` to toggle. The correct setup can be called by there full name or there flag.
 
-`move_node_directories` or `-D`: Moves the directories if they are on the wrong place in your system.
-`upload_open_browser` or `-B`: Opens an browser to the current assignment LMS webpage.
-`check_todo` or `-T`: Checks if there are any todo's in the current files and will ask it.
-`open_first_folder` or `-O`: Opens the first and only unhidden folder in the attempt (useful for opening Android Studio)
+Options|Flags:
+
+- `move_node_directories` or `-D`: Moves the directories if they are on the wrong place in your system.
+- `upload_open_browser` or `-B`: Opens an browser to the current assignment LMS webpage.
+- `check_todo` or `-T`: Checks if there are any todo's in the current files and will ask it.
+- `open_first_folder` or `-O`: Opens the first and only unhidden folder in the attempt (useful for opening Android Studio)

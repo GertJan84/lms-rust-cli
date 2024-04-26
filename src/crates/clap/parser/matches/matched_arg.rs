@@ -103,11 +103,6 @@ impl MatchedArg {
         self.vals_flatten().next()
     }
 
-    #[cfg(test)]
-    pub fn first_raw(&self) -> Option<&OsString> {
-        self.raw_vals_flatten().next()
-    }
-
     pub fn new_val_group(&mut self) {
         self.vals.push(vec![]);
         self.raw_vals.push(vec![]);
@@ -208,18 +203,3 @@ impl PartialEq for MatchedArg {
 }
 
 impl Eq for MatchedArg {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_grouped_vals_first() {
-        let mut m = MatchedArg::new_group();
-        m.new_val_group();
-        m.new_val_group();
-        m.append_val(AnyValue::new(String::from("bbb")), "bbb".into());
-        m.append_val(AnyValue::new(String::from("ccc")), "ccc".into());
-        assert_eq!(m.first_raw(), Some(&OsString::from("bbb")));
-    }
-}

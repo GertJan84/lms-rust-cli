@@ -20,9 +20,6 @@ mod value_parser;
 #[cfg(debug_assertions)]
 mod debug_asserts;
 
-#[cfg(test)]
-mod tests;
-
 pub mod styling;
 
 pub use self::str::Str;

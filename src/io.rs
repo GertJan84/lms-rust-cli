@@ -12,11 +12,9 @@ use std::{
     process::{exit, Command, Stdio},
 };
 
-// use crate::CLI_VERSION;
-
-
 const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 
+// TODO: Implement tests for request
 pub fn request(
     method: &str,
     path: String,
@@ -76,6 +74,7 @@ pub fn request(
     }
 }
 
+// TODO: Implement tests for response_to_json
 pub fn response_to_json(res: Response) -> Value {
     let text = res.text().unwrap();
     match serde_json::from_str(&text) {
@@ -91,6 +90,7 @@ pub fn is_installed(application: &str) -> bool {
     return execute_command("which", vec![application]);
 }
 
+// TODO: Implement tests for execute_command
 pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
     return Command::new(application)
         .args(args)
@@ -101,6 +101,7 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
         .success();
 }
 
+// TODO: Implement tests for download_tgz
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     let res = request("GET", path, token, None);
 
@@ -143,6 +144,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     drop(tar_process)
 }
 
+// TODO: Implement tests for handle_upgrade
 pub fn handle_upgrade() {
     let exe_name = "lms";
 
@@ -205,4 +207,17 @@ pub fn handle_upgrade() {
         .expect("Failed to set permissions");
 
     println!("Installed");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_installed() {
+        assert!(is_installed("ls"));
+        assert!(is_installed("wget"));
+        assert!(is_installed("lms"));
+        assert!(!is_installed("lms2"));
+    }
 }

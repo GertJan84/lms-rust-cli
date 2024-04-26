@@ -4,7 +4,7 @@ use std::{
     process::exit,
 };
 
-use crate::{files, io, settings::Settings};
+use crate::{crates::lazy::LazyBaseUrl, files, io, settings::Settings};
 
 pub struct Attempt {
     pub node_id: String,
@@ -34,7 +34,7 @@ impl Attempt {
     pub fn get_url(&self) -> String {
         format!(
             "{}/{}/{}",
-            crate::BASE_URL.to_string(),
+            LazyBaseUrl,
             "curriculum".to_string(),
             self.node_id
         )

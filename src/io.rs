@@ -12,6 +12,8 @@ use std::{
     process::{exit, Command, Stdio},
 };
 
+use crate::crates::lazy::LazyBaseUrl;
+
 const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 
 // TODO: Implement tests for request
@@ -23,7 +25,7 @@ pub fn request(
 ) -> Option<Response> {
     let url = format!(
         "{}{path}{}v=999",
-        crate::BASE_URL.to_string(),
+        LazyBaseUrl,
         if path.contains("?") { "&" } else { "?" }
     );
 

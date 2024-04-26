@@ -535,7 +535,6 @@ dependencies = [
  "configparser",
  "gethostname",
  "glob",
- "once_cell",
  "rand",
  "reqwest",
  "serde_json",

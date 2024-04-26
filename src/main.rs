@@ -2,10 +2,10 @@ extern crate glob;
 
 use arguments::{show::show_commands, toggle::toggle_commands};
 use clap::{Arg, Command};
-use once_cell::sync::Lazy;
 use std::env;
 mod arguments;
 mod attempt;
+mod crates;
 mod files;
 mod io;
 mod prompt;
@@ -13,9 +13,6 @@ mod settings;
 mod tests;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
-
-pub static BASE_URL: Lazy<String> =
-    Lazy::new(|| env::var("LMS_BASE_URL").unwrap_or("https://sd42.nl".to_string()));
 
 fn main() {
     let cmd = Command::new("lms")

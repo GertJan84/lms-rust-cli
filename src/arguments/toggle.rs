@@ -1,6 +1,9 @@
-use clap::Command;
+// use clap::Command;
 
+use crate::crates::clap::Command;
 use crate::settings::Settings;
+
+// use crate::{crates::clap::Command, settings::Settings};
 
 pub fn toggle_commands() -> Vec<Command> {
     vec![

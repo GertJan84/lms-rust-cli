@@ -1,6 +1,9 @@
-use clap::Command;
+// use clap::Command;
 
+use crate::crates::clap::Command;
 use crate::{attempt::Attempt, settings::Settings};
+
+// use crate::{attempt::Attempt, crates::clap::Command, settings::Settings};
 
 pub fn show_commands() -> Vec<Command> {
     vec![

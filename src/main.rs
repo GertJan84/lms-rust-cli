@@ -1,11 +1,13 @@
 extern crate glob;
 
 use arguments::{show::show_commands, toggle::toggle_commands};
-use clap::{Arg, Command};
+use crates::clap::{Arg, Command};
+// use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use std::env;
 mod arguments;
 mod attempt;
+mod crates;
 mod files;
 mod io;
 mod prompt;

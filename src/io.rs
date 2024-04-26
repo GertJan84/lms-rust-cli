@@ -22,11 +22,9 @@ pub fn request(
     data: Option<Vec<u8>>,
 ) -> Option<Response> {
     let url = format!(
-        "{}{}{}v={}",
+        "{}{path}{}v=999",
         crate::BASE_URL.to_string(),
-        path,
-        if path.contains("?") { "&" } else { "?" },
-        "999"
+        if path.contains("?") { "&" } else { "?" }
     );
 
     let client = Client::new();

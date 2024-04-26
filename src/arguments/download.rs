@@ -127,12 +127,13 @@ pub fn download_template(token: &String, attempt: &Attempt) -> bool {
         }
     }
 
-    if attempt.offline {
+    if reqwest::blocking::get(crate::BASE_URL.to_string()).is_err() {
         println!("No connection to server");
         return false;
     }
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
     io::download_tgz(url, &token, &attempt.get_path_buf());
+    
     true
 }

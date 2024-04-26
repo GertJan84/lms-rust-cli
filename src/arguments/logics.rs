@@ -21,10 +21,6 @@ pub fn open_logic(settings: &Settings) -> () {
         );
     }
 
-    if current_attempt.offline {
-        open_ide(&current_attempt.get_path_buf(), &settings.editors)
-    }
-
     if settings.get_bool("setup", "move_node_directories", true) {
         verify_logic()
     }

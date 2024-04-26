@@ -11,7 +11,6 @@ pub struct Attempt {
     pub module_id: String,
     pub spec: String,
     pub id: String,
-    pub offline: bool,
 }
 
 impl Attempt {
@@ -20,14 +19,12 @@ impl Attempt {
         module_id: String,
         spec: String,
         id: String,
-        offline: bool,
     ) -> Self {
         Self {
             node_id,
             module_id,
             spec,
             id,
-            offline,
         }
     }
 
@@ -95,7 +92,6 @@ impl Attempt {
             module_id.to_string(),
             spec.to_string(),
             id.to_string(),
-            false,
         )
     }
 
@@ -123,7 +119,6 @@ impl Attempt {
                     module_id.to_string(),
                     spec.to_string(),
                     id.to_string(),
-                    true,
                 );
             }
 

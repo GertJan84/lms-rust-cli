@@ -135,9 +135,6 @@ mod tests {
         let empty_dir = lms_dir.join("empty_dir1");
         let _ = fs::create_dir(&empty_dir);
 
-        // Wait for the directory to be created
-        std::thread::sleep(std::time::Duration::from_secs(1));
-
         assert!(is_folder_empty(&empty_dir));
         fs::remove_dir(&empty_dir).unwrap();
     }
@@ -147,9 +144,6 @@ mod tests {
         let lms_dir = get_lms_dir();
         let empty_dir = lms_dir.join("empty_dir2");
         let _ = fs::create_dir(&empty_dir);
-
-        // Wait for the directory to be created
-        std::thread::sleep(std::time::Duration::from_secs(1));
 
         let empty_dirs = get_empty_lms();
         assert!(empty_dirs.is_some(), "Expected Some, Got None");

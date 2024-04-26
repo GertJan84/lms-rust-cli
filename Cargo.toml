@@ -19,6 +19,7 @@ serde_json = "1.0.114"
 url = "2.5.0"
 webbrowser = "0.8.12"
 anstyle = "1.0.0"
+anstream = { version = "0.6.7", optional = true }
 
 
 [profile.release]
@@ -27,3 +28,9 @@ lto = true # Remove dead code.
 opt-level = 'z' # Optimize for aggressively for size.
 codegen-units = 1 # More effective optimizations but slower compile times
 panic = 'abort' # Removes panic code by aborting early
+
+[features]
+std = ["anstyle/std"] # support for no_std in a backwards-compatible way
+color = ["dep:anstream"]
+help = []
+usage = []

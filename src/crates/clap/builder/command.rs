@@ -701,7 +701,6 @@ impl Command {
         T: Into<OsString> + Clone,
     {
         self.try_get_matches_from_mut(itr).unwrap_or_else(|e| {
-            println!("ERROR: {}", e);
             drop(self);
             e.exit()
         })
@@ -790,16 +789,11 @@ impl Command {
     {
         let mut raw_args = clap_lex::RawArgs::new(itr);
         let mut cursor = raw_args.cursor();
-        println!("Command::try_get_matches_from_mut: Parsing arguments: {raw_args:?}");
-        println!("Command::try_get_matches_from_mut: Parsing arguments: {cursor:?}");
+
         if self.settings.is_set(AppSettings::Multicall) {
-            println!("Command::try_get_matches_from_mut: Multicall enabled");
             if let Some(argv0) = raw_args.next_os(&mut cursor) {
-                println!("Command::try_get_matches_from_mut: Found argv0: {argv0:?}");
                 let argv0 = Path::new(&argv0);
-                println!("Command::try_get_matches_from_mut: Parsed argv0: {argv0:?}");
                 if let Some(command) = argv0.file_stem().and_then(|f| f.to_str()) {
-                    println!("Command::try_get_matches_from_mut: Parsed command: {command}");
                     // Stop borrowing command so we can get another mut ref to it.
                     let command = command.to_owned();
                     debug!("Command::try_get_matches_from_mut: Parsed command {command} from argv");
@@ -824,7 +818,6 @@ impl Command {
         if !self.settings.is_set(AppSettings::NoBinaryName) {
             if let Some(name) = raw_args.next_os(&mut cursor) {
                 let p = Path::new(name);
-
                 if let Some(f) = p.file_name() {
                     if let Some(s) = f.to_str() {
                         if self.bin_name.is_none() {

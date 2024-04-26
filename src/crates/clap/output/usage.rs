@@ -6,8 +6,9 @@
 // Internal
 
 use crate::crates::clap::{
-    builder::{StyledStr, Styles},
-    util::ChildGraph,
+    builder::{ArgAction, ArgPredicate, StyledStr, Styles},
+    parser::ArgMatcher,
+    util::{ChildGraph, FlatSet},
     Command, Id,
 };
 

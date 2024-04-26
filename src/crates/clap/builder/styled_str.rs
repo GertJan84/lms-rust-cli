@@ -113,7 +113,7 @@ impl StyledStr {
     pub fn display_width(&self) -> usize {
         let mut width = 0;
         for c in self.iter_text() {
-            width += crate::output::display_width(c);
+            width += crate::crates::clap::output::display_width(c);
         }
         width
     }

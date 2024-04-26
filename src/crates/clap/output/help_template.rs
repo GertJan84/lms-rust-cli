@@ -9,17 +9,17 @@ use std::cmp;
 use std::usize;
 
 // Internal
-use crate::builder::PossibleValue;
-use crate::builder::Str;
-use crate::builder::StyledStr;
-use crate::builder::Styles;
-use crate::builder::{Arg, Command};
-use crate::output::display_width;
-use crate::output::wrap;
-use crate::output::Usage;
-use crate::output::TAB;
-use crate::output::TAB_WIDTH;
-use crate::util::FlatSet;
+use crate::crates::clap::builder::PossibleValue;
+use crate::crates::clap::builder::Str;
+use crate::crates::clap::builder::StyledStr;
+use crate::crates::clap::builder::Styles;
+use crate::crates::clap::builder::{Arg, Command};
+use crate::crates::clap::output::display_width;
+use crate::crates::clap::output::wrap;
+use crate::crates::clap::output::Usage;
+use crate::crates::clap::output::TAB;
+use crate::crates::clap::output::TAB_WIDTH;
+use crate::crates::clap::util::FlatSet;
 
 /// `clap` auto-generated help writer
 pub struct AutoHelp<'cmd, 'writer> {

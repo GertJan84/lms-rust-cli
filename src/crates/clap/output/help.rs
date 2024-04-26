@@ -1,10 +1,9 @@
 #![cfg_attr(not(feature = "help"), allow(unused_variables))]
 
 // Internal
-
-use crate::crates::clap::{builder::StyledStr, Command};
-
-use super::Usage;
+use crate::crates::clap::builder::Command;
+use crate::crates::clap::builder::StyledStr;
+use crate::crates::clap::output::Usage;
 
 /// Writes the parser help to the wrapped stream.
 pub fn write_help(writer: &mut StyledStr, cmd: &Command, usage: &Usage<'_>, use_long: bool) {

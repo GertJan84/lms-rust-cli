@@ -78,7 +78,9 @@ fn main() {
             .about("Toggle settings true or false")
             .arg_required_else_help(true)
             )
-
+        .subcommand(Command::new("review")
+            .about("Send code to ai to review")
+            )
         .get_matches();
 
     match cmd.subcommand() {
@@ -89,6 +91,7 @@ fn main() {
             ("upload", _) => arguments::execute("upload", "".to_string()),
             ("verify", _) => arguments::execute("verify", "".to_string()),
             ("template", _) => arguments::execute("template", "".to_string()),
+            ("review", _) => arguments::execute("review", "".to_string()),
             ("download", arg) => {
                 arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string())
             }

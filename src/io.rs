@@ -11,6 +11,8 @@ use std::{
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
+use std::collections::HashMap;
+use glob::glob;
 
 const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 
@@ -89,6 +91,8 @@ pub fn response_to_json(res: Response) -> Value {
 pub fn is_installed(application: &str) -> bool {
     return execute_command("which", vec![application]);
 }
+
+
 
 // TODO: Implement tests for execute_command
 pub fn execute_command(application: &str, args: Vec<&str>) -> bool {

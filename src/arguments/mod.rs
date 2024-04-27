@@ -6,6 +6,7 @@ pub mod login;
 pub mod setups;
 pub mod show;
 pub mod toggle;
+pub mod review;
 
 use std::process::exit;
 
@@ -26,6 +27,7 @@ pub fn execute(command: &str, arg: String) {
         "login" => login::login_logic(settings),
         "show" => show::show(&settings, arg),
         "toggle" => toggle::toggle(&mut settings, arg),
+        "review" => review::ai(&settings),
         _ => {
             eprintln!("invalid command {}", command);
         }

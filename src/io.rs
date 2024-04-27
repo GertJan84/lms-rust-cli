@@ -11,8 +11,6 @@ use std::{
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
-use std::collections::HashMap;
-use glob::glob;
 
 const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 

@@ -7,6 +7,8 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use crate::{io, settings::Settings, attempt::Attempt, arguments::setups};
 use std::collections::HashMap;
+use std::path::PathBuf;
+use colored::*;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,7 +24,7 @@ struct Message {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Error {
+struct Content {
     type_reference: String,
     line: u32,
     column: u32,
@@ -33,7 +35,7 @@ struct Error {
 #[derive(Debug, Serialize, Deserialize)]
 struct FileErrors {
     filename: String,
-    content: Vec<Error>,
+    content: Vec<Content>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,29 +43,35 @@ struct Response {
     files: Vec<FileErrors>,
 }
 
-pub fn ai(settings: &Settings) {
+pub fn review(settings: &Settings) {
+
+    let ai_endpoint = settings.get_string("ai", "endpoint", "".to_string());
+    let ai_key = settings.get_string("ai", "key", "".to_string());
+
+    if ai_key.is_empty() || ai_endpoint.is_empty() {
+        return eprintln!("You haven't defined your key or endpoint")
+    }
 
     let attempt = Attempt::get_current_attempt(&settings);
     let mut files_parsed: HashMap<String, String> = HashMap::new();
 
-    match setups::get_attempt_files_content(&attempt.get_path_buf()) {
-        Some(found_files) => {
-             found_files.iter().for_each(|(path, content)| {
-
-                 let mut file_content: String = String::new();
-
-                 content.iter().for_each(|line| {
-                     file_content.push_str(format!("{}\n", line).as_str())
-                 });
-
-                 files_parsed.insert(
-                     path.file_name().unwrap().to_str().unwrap().to_string(),
-                     file_content
-                 );
-             })
-        },
+    let found_files = match setups::get_attempt_files_content(&attempt.get_path_buf()) {
+        Some(data) => data,
         None => return eprintln!("Can't find files")
     };
+
+    found_files.iter().for_each(|(path, content)| {
+        let mut file_content: String = String::new();
+
+        content.iter().for_each(|line| {
+            file_content.push_str(format!("{}\n", line).as_str())
+        });
+
+        files_parsed.insert(
+            path.file_name().unwrap().to_str().unwrap().to_string(),
+            file_content
+        );
+    });
 
     let binding = serde_json::to_string(&files_parsed).unwrap();
     let files = binding.as_str();
@@ -89,14 +97,12 @@ pub fn ai(settings: &Settings) {
         ],
     };
 
-    let ai_endpoint = settings.get_string("ai", "endpoint", "".to_string());
-    let ai_key = settings.get_string("ai", "key", "".to_string());
 
     let request_json = serde_json::to_string(&req).unwrap();
 
     let client = Client::new();
 
-    println!("Reviewing code ...");
+    println!("Reviewing code ...\n");
     let res = client
         .post(&ai_endpoint)
         .header(CONTENT_TYPE, "application/json")
@@ -105,7 +111,7 @@ pub fn ai(settings: &Settings) {
         .send();
 
     if let Err(err) = res {
-        eprintln!("Faild to chat with ai: {}", err);
+        eprintln!("Failed to chat with ai: {}", err);
         return
     }
 
@@ -123,7 +129,7 @@ pub fn ai(settings: &Settings) {
         }
 
         StatusCode::SERVICE_UNAVAILABLE => {
-            eprintln!("AI api is having difficoulties");
+            eprintln!("AI api is unavalible");
             exit(1)
         }
         _ => {
@@ -139,7 +145,81 @@ pub fn ai(settings: &Settings) {
     let tmp = res_array.unwrap().as_array().unwrap().get(0).unwrap().as_object().unwrap().get("message");
     let data = tmp.unwrap().as_object().unwrap().get("content").unwrap().as_str().unwrap();
 
-    let parse_data: Response = serde_json::from_str(data).unwrap();
+     let parse_response: Result<Response, serde_json::Error> = serde_json::from_str(data);
 
-    println!("{:#?}", parse_data)
+    match parse_response {
+        Ok(data) => pretty_diff_print(found_files, data),
+        Err(_) => eprintln!("Can't parse ai response, try again later")
+    }
+}
+
+fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response) -> () {
+
+    let mut parse_files: HashMap<String, Vec<String>> = HashMap::new();
+    files.iter().for_each(|(file, content)| {
+        let file_data = content.clone();
+
+        parse_files.insert(
+            file.file_name().unwrap().to_str().unwrap().to_string(),
+            file_data
+        );
+    });
+
+    for rec in ai_response.files {
+        let file_content = match parse_files.get(rec.filename.as_str()) {
+            Some(data) => data,
+            None => continue
+        };
+
+        println!("-----------------------------");
+        for recommendation in rec.content {
+            match recommendation.type_reference.as_str() {
+                "error" => {
+                    println!("{}", "Error".red())
+                },
+
+                "warning" => {
+                    println!("{}", "Warning".yellow())
+                },
+
+                "spelling" => {
+                    println!("{}", "Spelling".blue())
+                },
+
+                "good_job" => {
+                    println!("{}", "Good Job".green())
+                },
+
+                "vulnerability" => {
+                    println!("{}", "Vulnerability".purple())
+                },
+
+                _ => {
+                    println!("Unknown: {}", recommendation.type_reference.as_str())
+                },
+            }
+            println!("\n{}\n", recommendation.message.as_str().underline());
+
+            let line_index = recommendation.line as usize;
+
+            if line_index > 0 && line_index < file_content.len() {
+                let start = line_index.saturating_sub(1);
+                let end = (line_index + 1).min(file_content.len());
+
+                let slice = &file_content[start..end];
+
+                for line in slice {
+                    println!("{}", line)
+                }
+
+            } else {
+                eprintln!("Can't print file content reference on: {}", line_index);
+            }
+
+            println!("\n{}\n", recommendation.suggestion.as_str().underline());
+
+            println!("-----------------------------");
+        }
+
+    }
 }

@@ -27,7 +27,7 @@ pub fn execute(command: &str, arg: String) {
         "login" => login::login_logic(settings),
         "show" => show::show(&settings, arg),
         "toggle" => toggle::toggle(&mut settings, arg),
-        "review" => review::ai(&settings),
+        "review" => review::review(&settings),
         _ => {
             eprintln!("invalid command {}", command);
         }

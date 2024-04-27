@@ -9,6 +9,7 @@ repository = "https://github.com/GertJan84/lms-rust-cli"
 
 [dependencies]
 clap = "4.5.1"
+colored = "2.1.0"
 configparser = "3.0.4"
 gethostname = "0.4.3"
 glob = "0.3.1"

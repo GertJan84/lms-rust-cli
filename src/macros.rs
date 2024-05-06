@@ -10,23 +10,15 @@ macro_rules! sub_inner {
 
 #[macro_export]
 macro_rules! subcommands {
-    ($sub_cmd:ident, $cmd:ident) => {
-        sub_inner!($sub_cmd, $cmd, "".to_string());
-        eprintln!("Invalid command");
-    };
-
-    ($sub_cmd:ident, ($cmd:ident, $arg:expr)) => {
-        sub_inner!($sub_cmd, $cmd, $arg);
-        eprintln!("Invalid command");
-    };
+    ($sub_cmd:ident $(,)*) => {};
 
     ($sub_cmd:ident, ($cmd:ident, $arg:expr) $(, $sub:tt)*) => {
         sub_inner!($sub_cmd, $cmd, $arg);
-        subcommands!($sub_cmd, $($sub),*);
+        subcommands!($sub_cmd $(, $sub)*);
     };
 
     ($sub_cmd:ident, $cmd:ident $(, $sub:tt)*) => {
         sub_inner!($sub_cmd, $cmd, "".to_string());
-        subcommands!($sub_cmd, $($sub),*);
+        subcommands!($sub_cmd $(, $sub)*);
     };
 }

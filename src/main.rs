@@ -104,6 +104,7 @@ fn main() {
                 (show, arg.subcommand_name().unwrap().to_string()),
                 (toggle, arg.subcommand_name().unwrap().to_string())
             );
+            eprintln!("Invalid command");
         }
     }
 }

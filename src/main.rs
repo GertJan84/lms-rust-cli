@@ -8,6 +8,7 @@ mod arguments;
 mod attempt;
 mod files;
 mod io;
+mod macros;
 mod prompt;
 mod settings;
 mod tests;
@@ -84,29 +85,25 @@ fn main() {
         .get_matches();
 
     match cmd.subcommand() {
-        Some(subcommand) => match subcommand {
-            ("open", _) => arguments::execute("open", "".to_string()),
-            ("login", _) => arguments::execute("login", "".to_string()),
-            ("update", _) => arguments::execute("update", "".to_string()),
-            ("upload", _) => arguments::execute("upload", "".to_string()),
-            ("verify", _) => arguments::execute("verify", "".to_string()),
-            ("template", _) => arguments::execute("template", "".to_string()),
-            ("review", _) => arguments::execute("review", "".to_string()),
-            ("download", arg) => {
-                arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string())
-            }
-            ("grade", arg) => arguments::execute(
-                "grade",
-                arg.get_one::<String>("short_name").unwrap().to_string(),
-            ),
-            ("show", sub_command) => {
-                arguments::execute("show", sub_command.subcommand_name().unwrap().to_string())
-            }
-            ("toggle", sub_command) => {
-                arguments::execute("toggle", sub_command.subcommand_name().unwrap().to_string())
-            }
-            _ => eprintln!("Invalid command"),
-        },
-        _ => eprintln!("Error"),
+        None => eprintln!("Error"),
+        Some((sub_cmd, arg)) => {
+            // sub_cmd is the name of the subcommand we need to give to the macro to compare with the commands
+            subcommands!(
+                sub_cmd,
+                login,
+                update,
+                upload,
+                open,
+                verify,
+                template,
+                (download, arg.get_one::<String>("id").unwrap().to_string()),
+                (
+                    grade,
+                    arg.get_one::<String>("short_name").unwrap().to_string()
+                ),
+                (show, arg.subcommand_name().unwrap().to_string()),
+                (toggle, arg.subcommand_name().unwrap().to_string())
+            );
+        }
     }
 }

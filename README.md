@@ -53,6 +53,10 @@ open_first_folder=false
 upload_open_browser=true
 check_todo=true
 
+[ai]
+endpoint=https://api.openai.com/v1/chat/completions 
+key=123
+
 [custom]
 editor=custom_script
 ```

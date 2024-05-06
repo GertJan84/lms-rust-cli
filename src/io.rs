@@ -90,6 +90,8 @@ pub fn is_installed(application: &str) -> bool {
     return execute_command("which", vec![application]);
 }
 
+
+
 // TODO: Implement tests for execute_command
 pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
     return Command::new(application)

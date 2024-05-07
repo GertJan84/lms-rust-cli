@@ -72,14 +72,16 @@ def main():
     """)
 
     exe_name = ""
-
+    
     match platform.system().lower():
         case "darwin":
-            exe_name = "mac_arm64"
+            exe_name = "mac_arm64" if platform.machine().lower() == "arm64" else "mac_x64"
+            bin_dir = "/usr/local/bin"
         case "linux":
             exe_name = "linux_64"
+            bin_dir = "~/.local/bin"
         case _:
-            die(f"Your platform is not supported :{platform.system()}")
+            die(f"Your platform is not supported:{platform.system()}")
 
     wget_installed = shutil.which("wget")
     curl_installed = shutil.which("curl")
@@ -87,7 +89,6 @@ def main():
     if not wget_installed and not curl_installed:
         die("You need either wget or curl to install lms")
 
-    bin_dir = os.path.expanduser("~/.local/bin")
     install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
@@ -110,8 +111,8 @@ def main():
     print(" done")
 
     if path := os.getenv("PATH"):  # noqa: SIM102
-        if os.path.expanduser("~/.local/bin") not in path:
-            print("This system doesn't have $HOME/.local/bin in its PATH.")
+        if os.path.expanduser(bin_dir) not in path:
+            print(f"This system doesn't have {bin_dir} in its PATH.")
             print("  Add this before running lms")
 
     print("\nInstallation complete")

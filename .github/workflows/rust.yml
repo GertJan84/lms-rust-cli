@@ -42,6 +42,9 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: lms_mac_arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: lms_mac_x64
 
     steps:
       - uses: actions/checkout@v2

@@ -72,7 +72,7 @@ def main():
     """)
 
     exe_name = ""
-    
+
     match platform.system().lower():
         case "darwin":
             exe_name = "mac_arm64" if platform.machine().lower() == "arm64" else "mac_x64"
@@ -98,11 +98,11 @@ def main():
             ["curl", "-sSL", "-o", install_mod, f"{REPO_URL}_{exe_name}"],
             "Cant find curl",
         )
-    elif wget_installed:
-        execute(
-            ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
-            "Cant find wget",
-        )
+    # elif wget_installed:
+    #     execute(
+    #         ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
+    #         "Cant find wget",
+    #     )
     else:
         die("You need either wget or curl to install lms")
 

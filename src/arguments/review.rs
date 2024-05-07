@@ -1,4 +1,4 @@
-use crate::{arguments::setups, attempt::Attempt, io, settings::Settings, ustring};
+use crate::{arguments::setups, attempt::Attempt, io, settings::Settings, ustr_ustring, ustring};
 use colored::*;
 use reqwest::{
     blocking::Client,
@@ -65,7 +65,7 @@ pub fn review(settings: &Settings) {
             .iter()
             .for_each(|line| file_content.push_str(format!("{}\n", line).as_str()));
 
-        files_parsed.insert(ustring!(path.file_name().unwrap().to_str()), file_content);
+        files_parsed.insert(ustr_ustring!(path.file_name()), file_content);
     });
 
     let binding = serde_json::to_string(&files_parsed).unwrap();
@@ -166,7 +166,7 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
     files.iter().for_each(|(file, content)| {
         let file_data = content.clone();
 
-        parse_files.insert(ustring!(file.file_name().unwrap().to_str()), file_data);
+        parse_files.insert(ustr_ustring!(file.file_name()), file_data);
     });
 
     for rec in ai_response.files {

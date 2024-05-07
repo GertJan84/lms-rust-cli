@@ -1,4 +1,4 @@
-use crate::{io, ustring};
+use crate::{io, ustr_ustring, ustring};
 use glob::glob;
 use std::{
     collections::{HashMap, HashSet},
@@ -89,7 +89,7 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
                 continue;
             }
 
-            let node_id = ustring!(path.file_name().unwrap().to_str());
+            let node_id = ustr_ustring!(path.file_name());
             let present_node_id = correct_nodes.get(&node_id);
 
             if present_node_id.is_none() {

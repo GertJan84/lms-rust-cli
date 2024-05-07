@@ -1,7 +1,7 @@
 use glob::glob;
 use std::{collections::HashSet, fs, path::Path, thread::sleep, time::Duration};
 
-use crate::{attempt::Attempt, files, io, settings::Settings};
+use crate::{attempt::Attempt, files, io, settings::Settings, ustr_ustring, ustring};
 
 use super::DOWNLOAD_EXCLUDE;
 
@@ -26,14 +26,7 @@ pub fn download_logic(settings: &Settings, arg: String) {
     for path in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
         match path {
             Ok(path) => {
-                local_dirs.insert(
-                    path.as_path()
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                );
+                local_dirs.insert(ustr_ustring!(path.as_path().file_name()));
             }
             Err(_) => {}
         }
@@ -134,6 +127,6 @@ pub fn download_template(token: &String, attempt: &Attempt) -> bool {
 
     let url = format!("/api/attempts/{}/template", &attempt.id);
     io::download_tgz(url, &token, &attempt.get_path_buf());
-    
+
     true
 }

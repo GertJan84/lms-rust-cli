@@ -35,3 +35,10 @@ macro_rules! ustring {
         $arg.unwrap().to_string()
     };
 }
+
+#[macro_export]
+macro_rules! ustr_ustring {
+    ($arg:expr) => {
+        ustring!($arg.unwrap().to_str())
+    };
+}

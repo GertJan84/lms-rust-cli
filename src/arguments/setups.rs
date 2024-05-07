@@ -6,7 +6,7 @@ use std::{
     process::exit,
 };
 
-use crate::{files, prompt, ustring};
+use crate::{files, prompt, ustr_ustring, ustring};
 
 use super::SCAN_FILE_TYPE;
 
@@ -61,10 +61,7 @@ pub fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usiz
             });
 
             if !todo_dict.is_empty() {
-                file_todo.insert(
-                    ustring!(file_location.file_name().unwrap().to_str()),
-                    todo_dict,
-                );
+                file_todo.insert(ustr_ustring!(file_location.file_name()), todo_dict);
             }
         }
     }

@@ -3,7 +3,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings};
+use crate::{attempt::Attempt, files, io, prompt, settings::Settings, ustring};
 
 use super::{
     download::download_template,
@@ -17,7 +17,7 @@ pub fn open_logic(settings: &Settings) -> () {
     if !download_template(&settings.get_token(), &current_attempt) {
         println!(
             "Already exists in {}",
-            &current_attempt.get_path_buf().to_str().unwrap().to_string()
+            ustring!(&current_attempt.get_path_buf().to_str())
         );
     }
 
@@ -70,7 +70,7 @@ pub fn upload_logic(settings: &Settings) {
 
     let mut tar = Command::new(cmd);
     tar.arg("czC")
-        .arg(current_attempt.get_path_buf().to_str().unwrap().to_string())
+        .arg(ustring!(current_attempt.get_path_buf().to_str()))
         .arg("--exclude-backups")
         .arg("--exclude-ignore=.gitignore")
         .arg("--exclude-ignore=.lmsignore")
@@ -127,7 +127,7 @@ pub fn template_logic(settings: &Settings) {
     if !download_template(&settings.get_token(), &current_attempt) {
         let error_message = format!(
             "Output directory {} already exists",
-            current_attempt.get_path_buf().to_str().unwrap().to_string()
+            ustring!(current_attempt.get_path_buf().to_str())
         );
 
         return eprintln!("{}", error_message);

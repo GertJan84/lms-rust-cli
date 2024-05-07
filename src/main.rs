@@ -96,13 +96,10 @@ fn main() {
                 open,
                 verify,
                 template,
-                (download, arg.get_one::<String>("id").unwrap().to_string()),
-                (show, arg.subcommand_name().unwrap().to_string()),
-                (toggle, arg.subcommand_name().unwrap().to_string()),
-                (
-                    grade,
-                    arg.get_one::<String>("short_name").unwrap().to_string()
-                )
+                (download, ustring!(arg.get_one::<String>("id"))),
+                (show, ustring!(arg.subcommand_name())),
+                (toggle, ustring!(arg.subcommand_name())),
+                (grade, ustring!(arg.get_one::<String>("short_name")))
             );
             eprintln!("Invalid command");
         }

@@ -22,3 +22,10 @@ macro_rules! subcommands {
         subcommands!($sub_cmd $(, $sub)*);
     };
 }
+
+#[macro_export]
+macro_rules! ustring {
+    ($arg:expr) => {
+        $arg.unwrap().to_string()
+    };
+}

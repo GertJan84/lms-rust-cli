@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{files, io, settings::Settings};
+use crate::{files, io, settings::Settings, ustring};
 
 use super::ide::open_ide;
 
@@ -45,16 +45,16 @@ pub fn grade_logic(settings: &Settings, arg: String) {
     if Path::exists(&out_dir) {
         eprintln!(
             "Submission already exists in {}",
-            out_dir.to_str().unwrap().to_string()
+            ustring!(out_dir.to_str())
         )
     } else {
         let _ = fs::create_dir_all(&out_dir);
         let url = format!(
             "/api/attempts/{}/submission",
-            attempt.get("spec").unwrap().as_str().unwrap().to_string()
+            ustring!(attempt.get("spec").unwrap().as_str())
         );
         io::download_tgz(url, &token, &out_dir);
-        println!("Downloaded to {}", out_dir.to_str().unwrap().to_string());
+        println!("Downloaded to {}", ustring!(out_dir.to_str()));
     }
 
     for name in vec!["_node", "_solution", "_template"] {
@@ -70,12 +70,9 @@ pub fn grade_logic(settings: &Settings, arg: String) {
 
         let mut glob_path = PathBuf::new();
         glob_path.push(&curriculum_dir);
-        glob_path.push(&attempt.get("period").unwrap().to_string());
-        glob_path.push(&attempt.get("module_id").unwrap().to_string());
-        glob_path.push(format!(
-            "[0-9][0-9]-{}",
-            &attempt.get("node_id").unwrap().to_string()
-        ));
+        glob_path.push(ustring!(&attempt.get("period")));
+        glob_path.push(ustring!(&attempt.get("module_id")));
+        glob_path.push(format!("[0-9][0-9]-{}", ustring!(&attempt.get("node_id"))));
 
         let glob_str = glob_path.to_str().expect("Invalid UTF-8 in path");
         if let Ok(mut paths) = glob(&glob_str) {
@@ -84,7 +81,7 @@ pub fn grade_logic(settings: &Settings, arg: String) {
                     let node_id = found_node_id.unwrap();
                     let _ = symlink(
                         &node_id,
-                        out_dir.join(format!("_{}", node_id.to_str().unwrap().to_string())),
+                        out_dir.join(format!("_{}", ustring!(node_id.to_str()))),
                     );
 
                     for what in vec!["solution", "template"] {

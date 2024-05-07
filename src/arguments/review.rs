@@ -1,26 +1,25 @@
-use std::process::exit;
+use crate::{arguments::setups, attempt::Attempt, io, settings::Settings, ustring};
+use colored::*;
 use reqwest::{
-    blocking::{Client},
+    blocking::Client,
+    header::{AUTHORIZATION, CONTENT_TYPE},
     StatusCode,
-    header::{AUTHORIZATION, CONTENT_TYPE}
 };
 use serde::{Deserialize, Serialize};
-use crate::{io, settings::Settings, attempt::Attempt, arguments::setups};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use colored::*;
-
+use std::process::exit;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AIPayload {
     model: String,
-    messages: Vec<Message>
+    messages: Vec<Message>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Message {
     role: String,
-    content: String
+    content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -44,12 +43,11 @@ struct Response {
 }
 
 pub fn review(settings: &Settings) {
-
     let ai_endpoint = settings.get_string("ai", "endpoint", "".to_string());
     let ai_key = settings.get_string("ai", "key", "".to_string());
 
     if ai_key.is_empty() || ai_endpoint.is_empty() {
-        return eprintln!("You haven't defined your key or endpoint")
+        return eprintln!("You haven't defined your key or endpoint");
     }
 
     let attempt = Attempt::get_current_attempt(&settings);
@@ -57,20 +55,17 @@ pub fn review(settings: &Settings) {
 
     let found_files = match setups::get_attempt_files_content(&attempt.get_path_buf()) {
         Some(data) => data,
-        None => return eprintln!("Can't find files")
+        None => return eprintln!("Can't find files"),
     };
 
     found_files.iter().for_each(|(path, content)| {
         let mut file_content: String = String::new();
 
-        content.iter().for_each(|line| {
-            file_content.push_str(format!("{}\n", line).as_str())
-        });
+        content
+            .iter()
+            .for_each(|line| file_content.push_str(format!("{}\n", line).as_str()));
 
-        files_parsed.insert(
-            path.file_name().unwrap().to_str().unwrap().to_string(),
-            file_content
-        );
+        files_parsed.insert(ustring!(path.file_name().unwrap().to_str()), file_content);
     });
 
     let binding = serde_json::to_string(&files_parsed).unwrap();
@@ -97,7 +92,6 @@ pub fn review(settings: &Settings) {
         ],
     };
 
-
     let request_json = serde_json::to_string(&req).unwrap();
 
     let client = Client::new();
@@ -112,7 +106,7 @@ pub fn review(settings: &Settings) {
 
     if let Err(err) = res {
         eprintln!("Failed to chat with ai: {}", err);
-        return
+        return;
     }
 
     let response = match res.as_ref().unwrap().status() {
@@ -138,37 +132,47 @@ pub fn review(settings: &Settings) {
         }
     };
 
-
     let json_data = io::response_to_json(response);
     let res_array = json_data.as_object().unwrap().get("choices");
 
-    let tmp = res_array.unwrap().as_array().unwrap().get(0).unwrap().as_object().unwrap().get("message");
-    let data = tmp.unwrap().as_object().unwrap().get("content").unwrap().as_str().unwrap();
+    let tmp = res_array
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .as_object()
+        .unwrap()
+        .get("message");
+    let data = tmp
+        .unwrap()
+        .as_object()
+        .unwrap()
+        .get("content")
+        .unwrap()
+        .as_str()
+        .unwrap();
 
-     let parse_response: Result<Response, serde_json::Error> = serde_json::from_str(data);
+    let parse_response: Result<Response, serde_json::Error> = serde_json::from_str(data);
 
     match parse_response {
         Ok(data) => pretty_diff_print(found_files, data),
-        Err(_) => eprintln!("Can't parse ai response, try again later")
+        Err(_) => eprintln!("Can't parse ai response, try again later"),
     }
 }
 
 fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response) -> () {
-
     let mut parse_files: HashMap<String, Vec<String>> = HashMap::new();
     files.iter().for_each(|(file, content)| {
         let file_data = content.clone();
 
-        parse_files.insert(
-            file.file_name().unwrap().to_str().unwrap().to_string(),
-            file_data
-        );
+        parse_files.insert(ustring!(file.file_name().unwrap().to_str()), file_data);
     });
 
     for rec in ai_response.files {
         let file_content = match parse_files.get(rec.filename.as_str()) {
             Some(data) => data,
-            None => continue
+            None => continue,
         };
 
         println!("-----------------------------");
@@ -176,27 +180,27 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
             match recommendation.type_reference.as_str() {
                 "error" => {
                     println!("{}", "Error".red())
-                },
+                }
 
                 "warning" => {
                     println!("{}", "Warning".yellow())
-                },
+                }
 
                 "spelling" => {
                     println!("{}", "Spelling".blue())
-                },
+                }
 
                 "good_job" => {
                     println!("{}", "Good Job".green())
-                },
+                }
 
                 "vulnerability" => {
                     println!("{}", "Vulnerability".purple())
-                },
+                }
 
                 _ => {
                     println!("Unknown: {}", recommendation.type_reference.as_str())
-                },
+                }
             }
             println!("\n{}\n", recommendation.message.as_str().underline());
 
@@ -211,7 +215,6 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
                 for line in slice {
                     println!("{}", line)
                 }
-
             } else {
                 eprintln!("Can't print file content reference on: {}", line_index);
             }
@@ -220,6 +223,5 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
 
             println!("-----------------------------");
         }
-
     }
 }

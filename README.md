@@ -11,6 +11,11 @@ Run this in terminal.
 ```bash
 wget -qO- https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
 ```
+or
+
+```bash
+curl -sSL https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+```
 
 ### How to run
 

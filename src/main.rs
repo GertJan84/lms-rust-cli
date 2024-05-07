@@ -87,7 +87,7 @@ fn main() {
     match cmd.subcommand() {
         None => eprintln!("Error"),
         Some((sub_cmd, arg)) => {
-            // sub_cmd is the name of the subcommand we need to give to the macro to compare with the commands
+            // create subcommand matching for a sub_cmd (a string like 'login')
             subcommands!(
                 sub_cmd,
                 login,

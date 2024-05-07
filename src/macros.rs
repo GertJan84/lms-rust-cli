@@ -1,3 +1,9 @@
+// Macros to shorten this extreme verbose variant of subcommand matching
+
+// ("open", _) => arguments::execute("open", "".to_string()),
+// ("download", arg) => { arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string()) }
+
+// command must have the same name as the argument
 #[macro_export]
 macro_rules! sub_inner {
     ($sub_cmd:ident, $cmd:ident, $arg:expr) => {

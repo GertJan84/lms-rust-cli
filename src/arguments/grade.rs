@@ -88,12 +88,7 @@ pub fn grade_logic(settings: &Settings, arg: String) {
                         let what_dir = out_dir.join(format!(
                             "{}{}",
                             what,
-                            attempt
-                                .get("variant_id")
-                                .unwrap()
-                                .as_str()
-                                .unwrap()
-                                .to_string()
+                            ustring!(attempt.get("variant_id").unwrap().as_str())
                         ));
                         if let Ok(metadata) = fs::metadata(&what_dir) {
                             let _ = metadata

@@ -58,11 +58,6 @@ def execute(commands: list[str], err_message: str) -> None:
         die(err_message)
 
 
-def is_installed(command: str, err_message: str) -> None | NoReturn:
-    if not shutil.which(command):
-        die(err_message)
-
-
 def main():
     print(r"""
                              /$$       /$$      /$$  /$$$$$$
@@ -86,16 +81,30 @@ def main():
         case _:
             die(f"Your platform is not supported :{platform.system()}")
 
-    is_installed("wget", "You need to have wget installed")
+    wget_installed = shutil.which("wget")
+    curl_installed = shutil.which("curl")
+
+    if not wget_installed and not curl_installed:
+        die("You need either wget or curl to install lms")
 
     bin_dir = os.path.expanduser("~/.local/bin")
     install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
     os.makedirs(bin_dir, exist_ok=True)
-    execute(
-        ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget"
-    )
+    if curl_installed:
+        execute(
+            ["curl", "-sSL", "-o", install_mod, f"{REPO_URL}_{exe_name}"],
+            "Cant find curl",
+        )
+    elif wget_installed:
+        execute(
+            ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
+            "Cant find wget",
+        )
+    else:
+        die("You need either wget or curl to install lms")
+
     os.chmod(install_mod, 755)
 
     print(" done")

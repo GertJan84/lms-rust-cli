@@ -97,12 +97,12 @@ fn main() {
                 verify,
                 template,
                 (download, arg.get_one::<String>("id").unwrap().to_string()),
+                (show, arg.subcommand_name().unwrap().to_string()),
+                (toggle, arg.subcommand_name().unwrap().to_string()),
                 (
                     grade,
                     arg.get_one::<String>("short_name").unwrap().to_string()
-                ),
-                (show, arg.subcommand_name().unwrap().to_string()),
-                (toggle, arg.subcommand_name().unwrap().to_string())
+                )
             );
             eprintln!("Invalid command");
         }

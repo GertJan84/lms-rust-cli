@@ -96,6 +96,7 @@ fn main() {
                 open,
                 verify,
                 template,
+                review,
                 (download, ustring!(arg.get_one::<String>("id"))),
                 (show, ustring!(arg.subcommand_name())),
                 (toggle, ustring!(arg.subcommand_name())),

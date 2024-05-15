@@ -78,7 +78,7 @@ def main():
         case "darwin":
             exe_name = "mac_arm64" if platform.machine().lower() == "arm64" else "mac_x64"
         case "linux":
-            exe_name = "linux_64"
+            exe_name = "linux_arm64" if platform.machine().lower() == "arm64" else "linux_x64"
         case _:
             die(f"Your platform is not supported:{platform.system()}")
 

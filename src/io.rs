@@ -164,14 +164,6 @@ pub fn handle_upgrade() {
         }
     }
 
-    if Path::exists(&lms_loc.join(exe_name)) {
-        println!("Removing old version");
-        if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
-            eprintln!("A error occurred with removing: {}", err);
-            exit(1)
-        }
-    }
-
     let architecture = std::env::consts::ARCH;
 
     if !SUPPORTED_ARCHITECTURES.contains(&architecture) {
@@ -181,7 +173,7 @@ pub fn handle_upgrade() {
 
     // TODO: Check if macos is arm or intel
     let plat = match env::consts::OS {
-        "linux" => "linux_64",
+        "linux" => "linux_x64",
         "macos" => "mac_arm64",
         platform => {
             eprintln!("Your platform is not supported - {}", platform);
@@ -198,6 +190,14 @@ pub fn handle_upgrade() {
     if !response.status().is_success() {
         eprintln!("Failed to download lms");
         exit(1)
+    }
+
+    if Path::exists(&lms_loc.join(exe_name)) {
+        println!("Removing old version");
+        if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
+            eprintln!("A error occurred with removing: {}", err);
+            exit(1)
+        }
     }
 
     let mut file = File::create(lms_loc.join("lms")).expect("failed to create file");

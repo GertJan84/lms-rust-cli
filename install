@@ -16,7 +16,7 @@ def die(message: str) -> NoReturn:
     Args:
         message (str): The error message to display before exiting.
     """
-    print(message)
+    print(f"[ERROR]: {message}")
     exit(1)
 
 
@@ -72,14 +72,13 @@ def main():
     """)
 
     exe_name = ""
+    bin_dir = f"{os.getenv('HOME')}/.local/bin"
 
     match platform.system().lower():
         case "darwin":
             exe_name = "mac_arm64" if platform.machine().lower() == "arm64" else "mac_x64"
-            bin_dir = "/usr/local/bin"
         case "linux":
             exe_name = "linux_64"
-            bin_dir = "~/.local/bin"
         case _:
             die(f"Your platform is not supported:{platform.system()}")
 
@@ -111,12 +110,24 @@ def main():
     print(" done")
 
     if path := os.getenv("PATH"):  # noqa: SIM102
-        if os.path.expanduser(bin_dir) not in path:
-            print(f"This system doesn't have {bin_dir} in its PATH.")
-            print("  Add this before running lms")
+        if os.path.expanduser(bin_dir) in path:
+            print("\nInstallation complete")
+            return
 
-    print("\nInstallation complete")
+        print(f"This system doesn't have {bin_dir} in its PATH.")
+        print("  Add this before running lms")
 
+        if shell := os.getenv("SHELL"):  # noqa: SIM102
+
+            print("Execute this command to add lms to your path")
+            match shell.split("/")[-1]:
+                case "zsh":
+                    print(f"echo path += '{bin_dir}' >> ~/.zshrc")
+                    print("echo EXPORT PATH >> ~/.zshrc")
+                case "bash":
+                    print(f"echo PATH={bin_dir}:$PATH >> ~/.bashrc")
+                case _:
+                    die(f"You need to add {bin_dir} to your shell")
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 [package]
 name = "lms"
-author = ["Gert-Jan de Boer", "Tom van het Bolscher"]
-version = "16.1.0"
+authors = ["Gert-Jan de Boer", "Tom van het Bolscher"]
+version = "16.2.0"
 edition = "2021"
 description = "lms cli client written in rust"
 readme = "README.md"
@@ -9,12 +9,14 @@ repository = "https://github.com/GertJan84/lms-rust-cli"
 
 [dependencies]
 clap = "4.5.1"
+colored = "2.1.0"
 configparser = "3.0.4"
 gethostname = "0.4.3"
 glob = "0.3.1"
 once_cell = "1.19.0"
 rand = "0.8.5"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.114"
 url = "2.5.0"
 webbrowser = "0.8.12"

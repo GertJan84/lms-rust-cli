@@ -1,31 +1,31 @@
-use crate::files;
-
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
 };
 use serde_json::Value;
 use std::{
-    os::unix::fs::PermissionsExt,
-    env, fs,
+    env,
+    fs::{self, File},
     io::Write,
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
 
-// use crate::CLI_VERSION;
+const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 
+// TODO: Implement tests for request
 pub fn request(
     method: &str,
     path: String,
     token: &String,
     data: Option<Vec<u8>>,
 ) -> Option<Response> {
-    let url = if path.contains("?") {
-        format!("{}{}&v={}", crate::BASE_URL.to_string(), path, "999")
-    } else {
-        format!("{}{}?v={}", crate::BASE_URL.to_string(), path, "999")
-    };
+    let url = format!(
+        "{}{path}{}v=999",
+        crate::BASE_URL.to_string(),
+        if path.contains("?") { "&" } else { "?" }
+    );
 
     let client = Client::new();
 
@@ -74,6 +74,7 @@ pub fn request(
     }
 }
 
+// TODO: Implement tests for response_to_json
 pub fn response_to_json(res: Response) -> Value {
     let text = res.text().unwrap();
     match serde_json::from_str(&text) {
@@ -89,6 +90,9 @@ pub fn is_installed(application: &str) -> bool {
     return execute_command("which", vec![application]);
 }
 
+
+
+// TODO: Implement tests for execute_command
 pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
     return Command::new(application)
         .args(args)
@@ -99,6 +103,7 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
         .success();
 }
 
+// TODO: Implement tests for download_tgz
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     let res = request("GET", path, token, None);
 
@@ -141,6 +146,7 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     drop(tar_process)
 }
 
+// TODO: Implement tests for handle_upgrade
 pub fn handle_upgrade() {
     let exe_name = "lms";
 
@@ -153,29 +159,54 @@ pub fn handle_upgrade() {
 
     if !Path::exists(&lms_loc) {
         if let Err(err) = fs::create_dir_all(&lms_loc) {
-            eprintln!("A error occurred: {}", err);
+            eprintln!("A error occurred with creating: {}", err);
             exit(1)
         }
     }
 
-    if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
-        eprintln!("A error occurred: {}", err);
+    if Path::exists(&lms_loc.join(exe_name)) {
+        println!("Removing old version");
+        if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
+            eprintln!("A error occurred with removing: {}", err);
+            exit(1)
+        }
+    }
+
+    let architecture = std::env::consts::ARCH;
+
+    if !SUPPORTED_ARCHITECTURES.contains(&architecture) {
+        eprintln!("{} processor is not supported", &architecture);
         exit(1)
     }
 
     // TODO: Check if macos is arm or intel
-    let plat = match env::consts::OS { 
+    let plat = match env::consts::OS {
         "linux" => "linux_64",
         "macos" => "mac_arm64",
-        _ => {
-            eprintln!("Your platform is not supported");
+        platform => {
+            eprintln!("Your platform is not supported - {}", platform);
             exit(1)
         }
     };
-    
-    // TODO: Use reqwest instant of wget 
-    execute_command("wget", vec!["-q", "-O", lms_loc.join("lms").to_str().unwrap(), format!("https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}", plat).as_str()]);
-    
-    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755)).expect("Faild to set permissions");
+
+    let mut response = reqwest::blocking::get(format!(
+        "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms_{}",
+        plat
+    ))
+    .expect("request failed");
+
+    if !response.status().is_success() {
+        eprintln!("Failed to download lms");
+        exit(1)
+    }
+
+    let mut file = File::create(lms_loc.join("lms")).expect("failed to create file");
+    response
+        .copy_to(&mut file)
+        .expect("failed to write to file");
+
+    fs::set_permissions(lms_loc.join("lms"), fs::Permissions::from_mode(0o755))
+        .expect("Failed to set permissions");
+
     println!("Installed");
 }

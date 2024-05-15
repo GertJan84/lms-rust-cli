@@ -8,8 +8,10 @@ mod arguments;
 mod attempt;
 mod files;
 mod io;
+mod macros;
 mod prompt;
 mod settings;
+mod tests;
 
 pub const CLI_VERSION: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
 
@@ -77,32 +79,30 @@ fn main() {
             .about("Toggle settings true or false")
             .arg_required_else_help(true)
             )
-
+        .subcommand(Command::new("review")
+            .about("Send code to ai to review")
+            )
         .get_matches();
 
     match cmd.subcommand() {
-        Some(subcommand) => match subcommand {
-            ("open", _) => arguments::execute("open", "".to_string()),
-            ("login", _) => arguments::execute("login", "".to_string()),
-            ("update", _) => arguments::execute("update", "".to_string()),
-            ("upload", _) => arguments::execute("upload", "".to_string()),
-            ("verify", _) => arguments::execute("verify", "".to_string()),
-            ("template", _) => arguments::execute("template", "".to_string()),
-            ("download", arg) => {
-                arguments::execute("download", arg.get_one::<String>("id").unwrap().to_string())
-            }
-            ("grade", arg) => arguments::execute(
-                "grade",
-                arg.get_one::<String>("short_name").unwrap().to_string(),
-            ),
-            ("show", sub_command) => {
-                arguments::execute("show", sub_command.subcommand_name().unwrap().to_string())
-            }
-            ("toggle", sub_command) => {
-                arguments::execute("toggle", sub_command.subcommand_name().unwrap().to_string())
-            }
-            _ => eprintln!("Invalid command"),
-        },
-        _ => eprintln!("Error"),
+        None => eprintln!("Error"),
+        Some((sub_cmd, arg)) => {
+            // create subcommand matching for a sub_cmd (a string like 'login')
+            subcommands!(
+                sub_cmd,
+                login,
+                update,
+                upload,
+                open,
+                verify,
+                template,
+                review,
+                (download, ustring!(arg.get_one::<String>("id"))),
+                (show, ustring!(arg.subcommand_name())),
+                (toggle, ustring!(arg.subcommand_name())),
+                (grade, ustring!(arg.get_one::<String>("short_name")))
+            );
+            eprintln!("Invalid command");
+        }
     }
 }

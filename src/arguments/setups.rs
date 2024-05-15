@@ -6,12 +6,15 @@ use std::{
     process::exit,
 };
 
-use crate::{files, prompt};
+use crate::{files, prompt, ustr_ustring, ustring};
 
 use super::SCAN_FILE_TYPE;
 
-pub fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
-    let mut file_todo = HashMap::new();
+// TODO: Move function to different location
+pub fn get_attempt_files_content(
+    project_folder: &PathBuf,
+) -> Option<HashMap<PathBuf, Vec<String>>> {
+    let mut files_content: HashMap<PathBuf, Vec<String>> = HashMap::new();
 
     for files in glob(project_folder.join("*").to_str().unwrap()).unwrap() {
         if let Ok(file) = files {
@@ -34,23 +37,36 @@ pub fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usiz
                 .map(String::from)
                 .collect();
 
+            files_content.insert(file, lines);
+        }
+    }
+
+    if !files_content.is_empty() {
+        return Some(files_content);
+    }
+
+    None
+}
+
+pub fn get_todo(project_folder: &PathBuf) -> Option<HashMap<String, HashMap<usize, String>>> {
+    let mut file_todo = HashMap::new();
+
+    if let Some(found_files) = get_attempt_files_content(&project_folder) {
+        for (file_location, content) in found_files {
             let mut todo_dict = HashMap::new();
-            lines.iter().enumerate().rev().for_each(|(idx, line)| {
+            content.iter().enumerate().rev().for_each(|(idx, line)| {
                 if line.contains("TODO") {
                     todo_dict.insert(idx + 1, line.to_string());
                 }
             });
 
             if !todo_dict.is_empty() {
-                file_todo.insert(
-                    file.file_name().unwrap().to_str().unwrap().to_string(),
-                    todo_dict,
-                );
+                file_todo.insert(ustr_ustring!(file_location.file_name()), todo_dict);
             }
         }
     }
 
-    if file_todo.len() != 0 {
+    if !file_todo.is_empty() {
         return Some(file_todo);
     }
 
@@ -64,8 +80,8 @@ pub fn verify_logic() {
         for (local_directory, valid_directory) in &misplaced {
             println!(
                 "  {} -> {}",
-                local_directory.to_str().unwrap().to_string(),
-                valid_directory.to_str().unwrap().to_string()
+                ustring!(local_directory.to_str()),
+                ustring!(valid_directory.to_str())
             );
         }
 

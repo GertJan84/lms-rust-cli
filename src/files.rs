@@ -1,4 +1,4 @@
-use crate::io;
+use crate::{io, ustr_ustring, ustring};
 use glob::glob;
 use std::{
     collections::{HashMap, HashSet},
@@ -55,6 +55,7 @@ pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
     }
 }
 
+// TODO: Implement tests for get_misplaced_nodes
 pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
     let lms_dir = get_lms_dir();
 
@@ -88,14 +89,14 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
                 continue;
             }
 
-            let node_id = path.file_name().unwrap().to_str().unwrap().to_string();
+            let node_id = ustr_ustring!(path.file_name());
             let present_node_id = correct_nodes.get(&node_id);
 
             if present_node_id.is_none() {
                 continue;
             }
 
-            match present_node_id.unwrap().as_str().unwrap().to_string() {
+            match ustring!(present_node_id.unwrap().as_str()) {
                 correct_path if !correct_path.eq(local_path_current.to_str().unwrap()) => {
                     let new_name: Vec<_> = correct_path.split("/").collect();
 
@@ -111,4 +112,46 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
         }
     }
     misplaced
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_lms_dir() {
+        let lms_dir = get_lms_dir();
+        let expected = PathBuf::from(format!("{}/lms", env::var("HOME").unwrap()));
+        assert_eq!(
+            lms_dir, expected,
+            "Expected: {:?}, Got: {:?}",
+            expected, lms_dir
+        );
+    }
+
+    #[test]
+    fn test_is_folder_empty() {
+        let lms_dir = get_lms_dir();
+        let empty_dir = lms_dir.join("empty_dir1");
+        let _ = fs::create_dir(&empty_dir);
+
+        assert!(is_folder_empty(&empty_dir));
+        fs::remove_dir(&empty_dir).unwrap();
+    }
+
+    #[test]
+    fn test_get_empty_lms() {
+        let lms_dir = get_lms_dir();
+        let empty_dir = lms_dir.join("empty_dir2");
+        let _ = fs::create_dir(&empty_dir);
+
+        let empty_dirs = get_empty_lms();
+        assert!(empty_dirs.is_some(), "Expected Some, Got None");
+        assert!(
+            empty_dirs.unwrap().contains(&empty_dir),
+            "Expected true, Got false"
+        );
+
+        fs::remove_dir(&empty_dir).unwrap();
+    }
 }

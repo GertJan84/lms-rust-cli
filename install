@@ -5,8 +5,10 @@ import shutil
 from typing import NoReturn
 import subprocess
 import platform
+import urllib.request
 
 REPO_URL = "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms"
+
 
 def die(message: str) -> NoReturn:
     """
@@ -15,7 +17,7 @@ def die(message: str) -> NoReturn:
     Args:
         message (str): The error message to display before exiting.
     """
-    print(message)
+    print(f"[ERROR]: {message}")
     exit(1)
 
 
@@ -57,52 +59,65 @@ def execute(commands: list[str], err_message: str) -> None:
         die(err_message)
 
 
-def is_installed(command: str, err_message: str) -> None | NoReturn:
-    if not shutil.which(command):
-        die(err_message)
-
-
 def main():
     print(r"""
-                             /$$       /$$      /$$  /$$$$$$ 
+                             /$$       /$$      /$$  /$$$$$$
                             | $$      | $$$    /$$$ /$$__  $$
                             | $$      | $$$$  /$$$$| $$  \__/
-                            | $$      | $$ $$/$$ $$|  $$$$$$ 
+                            | $$      | $$ $$/$$ $$|  $$$$$$
                             | $$      | $$  $$$| $$ \____  $$
                             | $$      | $$\  $ | $$ /$$  \ $$
                             | $$$$$$$$| $$ \/  | $$|  $$$$$$/
-                            |________/|__/     |__/ \______/ 
+                            |________/|__/     |__/ \______/
                                  
     """)
 
     exe_name = ""
+    bin_dir = f"{os.getenv('HOME')}/.local/bin"
 
     match platform.system().lower():
         case "darwin":
-            exe_name = "mac_arm64"
+            exe_name = "mac_arm64" if platform.machine().lower() == "arm64" else "mac_x64"
         case "linux":
-            exe_name = "linux_64"
+            exe_name = "linux_arm64" if platform.machine().lower() == "arm64" else "linux_x64"
         case _:
-            die(f"Your platform is not supported :{platform.system()}")
+            die(f"Your platform is not supported:{platform.system()}")
 
-    is_installed("wget", "You need to have wget installed")
-
-    bin_dir = os.path.expanduser("~/.local/bin")
     install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
     os.makedirs(bin_dir, exist_ok=True)
-    execute(["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"], "Cant find wget")
+    try:
+        with urllib.request.urlopen(f"{REPO_URL}_{exe_name}") as response:
+            data = response.read()
+            with open(install_mod, 'wb') as f:
+                f.write(data)
+    except Exception as e:
+        die(f"Failed to download file: {e}")
+
     os.chmod(install_mod, 755)
 
     print(" done")
 
     if path := os.getenv("PATH"):  # noqa: SIM102
-        if os.path.expanduser("~/.local/bin") not in path:
-            print("This system doesn't have $HOME/.local/bin in its PATH.")
-            print("  Add this before running lms")
+        if os.path.expanduser(bin_dir) in path:
+            print("\nInstallation complete")
+            return
 
-    print("\nInstallation complete")
+        print(f"This system doesn't have {bin_dir} in its PATH.")
+        print("  Add this before running lms")
+
+        if shell := os.getenv("SHELL"):  # noqa: SIM102
+
+            print("Execute this command to add lms to your path")
+            match shell.split("/")[-1]:
+                case "zsh":
+                    print(f"echo path += '{bin_dir}' >> ~/.zshrc")
+                    print("echo EXPORT PATH >> ~/.zshrc")
+                case "bash":
+                    print(f"echo PATH={bin_dir}:$PATH >> ~/.bashrc")
+                case _:
+                    die(f"You need to add {bin_dir} to your shell")
 
 if __name__ == "__main__":
     main()

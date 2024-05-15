@@ -6,6 +6,7 @@ pub mod login;
 pub mod setups;
 pub mod show;
 pub mod toggle;
+pub mod review;
 
 use std::process::exit;
 
@@ -14,7 +15,7 @@ const SCAN_FILE_TYPE: [&str; 7] = ["sql", "rs", "py", "js", "css", "html", "svel
 const DOWNLOAD_EXCLUDE: [&str; 3] = ["exam", "project", "graduation"];
 
 pub fn execute(command: &str, arg: String) {
-    let settings = crate::settings::Settings::new();
+    let mut settings = crate::settings::Settings::new();
     match command {
         "open" => logics::open_logic(&settings),
         "grade" => grade::grade_logic(&settings, arg),
@@ -25,7 +26,8 @@ pub fn execute(command: &str, arg: String) {
         "verify" => setups::verify_logic(),
         "login" => login::login_logic(settings),
         "show" => show::show(&settings, arg),
-        "toggle" => toggle::toggle(settings, arg),
+        "toggle" => toggle::toggle(&mut settings, arg),
+        "review" => review::review(&settings),
         _ => {
             eprintln!("invalid command {}", command);
         }

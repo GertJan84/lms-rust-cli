@@ -94,14 +94,14 @@ def main():
     os.makedirs(bin_dir, exist_ok=True)
     if curl_installed:
         execute(
-            ["curl", "-sSL", "-o", install_mod, f"{REPO_URL}_{exe_name}"],
+            ["curl", "-sSL", install_mod, f"{REPO_URL}_{exe_name}"],
             "Cant find curl",
         )
-    # elif wget_installed:
-    #     execute(
-    #         ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
-    #         "Cant find wget",
-    #     )
+    elif wget_installed:
+         execute(
+             ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
+             "Cant find wget",
+         )
     else:
         die("You need either wget or curl to install lms")
 

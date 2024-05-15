@@ -173,7 +173,7 @@ pub fn handle_upgrade() {
 
     // TODO: Check if macos is arm or intel
     let plat = match env::consts::OS {
-        "linux" => "linux_64",
+        "linux" => "linux_x64",
         "macos" => "mac_arm64",
         platform => {
             eprintln!("Your platform is not supported - {}", platform);

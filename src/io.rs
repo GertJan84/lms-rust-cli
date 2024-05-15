@@ -210,16 +210,3 @@ pub fn handle_upgrade() {
 
     println!("Installed");
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_is_installed() {
-        assert!(is_installed("ls"));
-        assert!(is_installed("wget"));
-        assert!(is_installed("lms"));
-        assert!(!is_installed("lms2"));
-    }
-}

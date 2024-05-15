@@ -198,8 +198,8 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
                     println!("{}", "Vulnerability".purple())
                 }
 
-                _ => {
-                    println!("Unknown: {}", recommendation.type_reference.as_str())
+                unknown_response => {
+                    println!("Unknown: {}", unknown_response)
                 }
             }
             println!("\n{}\n", recommendation.message.as_str().underline());

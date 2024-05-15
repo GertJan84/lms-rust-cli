@@ -5,6 +5,7 @@ import shutil
 from typing import NoReturn
 import subprocess
 import platform
+import urllib.request
 
 REPO_URL = "https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms"
 
@@ -82,28 +83,17 @@ def main():
         case _:
             die(f"Your platform is not supported:{platform.system()}")
 
-    wget_installed = shutil.which("wget")
-    curl_installed = shutil.which("curl")
-
-    if not wget_installed and not curl_installed:
-        die("You need either wget or curl to install lms")
-
     install_mod = os.path.join(bin_dir, "lms")
 
     lprint("Downloading")
     os.makedirs(bin_dir, exist_ok=True)
-    if curl_installed:
-        execute(
-            ["curl", "-sSL", install_mod, f"{REPO_URL}_{exe_name}"],
-            "Cant find curl",
-        )
-    elif wget_installed:
-         execute(
-             ["wget", "-q", "-O", install_mod, f"{REPO_URL}_{exe_name}"],
-             "Cant find wget",
-         )
-    else:
-        die("You need either wget or curl to install lms")
+    try:
+        with urllib.request.urlopen(f"{REPO_URL}_{exe_name}") as response:
+            data = response.read()
+            with open(install_mod, 'wb') as f:
+                f.write(data)
+    except Exception as e:
+        die(f"Failed to download file: {e}")
 
     os.chmod(install_mod, 755)
 

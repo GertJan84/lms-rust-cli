@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import shutil
 from typing import NoReturn
 import subprocess
 import platform
@@ -120,6 +119,7 @@ def main():
                     print(f"echo PATH={bin_dir}:$PATH >> ~/.bashrc")
                 case _:
                     die(f"You need to add {bin_dir} to your shell")
+
 
 if __name__ == "__main__":
     main()

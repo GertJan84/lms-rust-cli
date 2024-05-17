@@ -123,7 +123,7 @@ pub fn review(settings: &Settings) {
         }
 
         StatusCode::SERVICE_UNAVAILABLE => {
-            eprintln!("AI api is unavalible");
+            eprintln!("AI api is unavailable");
             exit(1)
         }
         _ => {

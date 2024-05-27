@@ -1,5 +1,5 @@
 use glob::glob;
-use std::{collections::HashSet, fs, path::Path, thread::sleep, time::Duration};
+use std::{collections::HashSet, fs, path::Path, process::exit, thread::sleep, time::Duration};
 
 use crate::{attempt::Attempt, files, io, settings::Settings, ustr_ustring, ustring};
 
@@ -10,6 +10,7 @@ pub fn download_logic(settings: &Settings, arg: String) {
 
     if !arg.eq("all") {
         let _ = download_attempt(&arg, &token);
+        exit(0) // stop downloading the rest of the assignments
     }
 
     let response = io::request("GET", "/api/node-paths".to_string(), &token, None);

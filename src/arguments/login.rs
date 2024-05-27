@@ -20,6 +20,11 @@ pub fn login_logic(mut settings: Settings) {
         encoded_host,
         &token
     );
-    println!("Go to this URL to authorize lms: {}", url);
-    let _ = webbrowser::open(url.as_str());
+
+    if webbrowser::open(url.as_str()).is_ok() {
+        println!("LMS login authorized")
+    }
+    else {
+        println!("Go to this URL to authorize lms: {}", url);
+    }
 }

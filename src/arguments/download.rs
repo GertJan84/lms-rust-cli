@@ -16,9 +16,7 @@ pub fn download_logic(settings: &Settings, arg: String) {
     let response = io::request("GET", "/api/node-paths".to_string(), &token, None);
     let attempts = match response {
         Some(data) => io::response_to_json(data),
-        None => {
-            return eprintln!("No attempt found");
-        }
+        None => return eprintln!("No attempt found"),
     };
 
     let mut local_dirs: HashSet<String> = HashSet::new();

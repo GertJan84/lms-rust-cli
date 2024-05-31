@@ -14,9 +14,7 @@ pub fn yes_no(message: &str) -> bool {
         match trim_input.as_str() {
             "y" | "" => return true,
             "n" => return false,
-            _ => {
-                println!("{}: is not valid", trim_input);
-            }
+            _ => println!("{}: is not valid", trim_input),
         }
     }
 }

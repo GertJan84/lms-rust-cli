@@ -110,14 +110,10 @@ pub fn upload_logic(settings: &Settings) {
                         }
                     }
                 }
-                None => {
-                    return eprintln!("Error getting transferred value");
-                }
+                None => return eprintln!("Error getting transferred value"),
             }
         }
-        None => {
-            return eprintln!("Failed to upload attempt");
-        }
+        None => return eprintln!("Failed to upload attempt"),
     }
 }
 

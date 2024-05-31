@@ -44,6 +44,13 @@ macro_rules! ustr_ustring {
 }
 
 #[macro_export]
+macro_rules! stru {
+    ($arg:expr) => {
+        $arg.to_str().unwrap()
+    };
+}
+
+#[macro_export]
 macro_rules! error_exit {
     ($($arg:tt)*) => {
         {

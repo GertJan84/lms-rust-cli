@@ -1,4 +1,4 @@
-use crate::{error_exit, io, ustr_ustring, ustring};
+use crate::{error_exit, io, stru, ustr_ustring, ustring};
 use glob::glob;
 use std::{
     collections::{HashMap, HashSet},
@@ -34,7 +34,7 @@ pub fn get_empty_lms() -> Option<HashSet<PathBuf>> {
     let lms_dir = get_lms_dir().join("*");
     let mut empty_dirs: HashSet<PathBuf> = HashSet::new();
 
-    for dir in glob(lms_dir.to_str().unwrap()).expect("Failed to read lms dir") {
+    for dir in glob(stru!(lms_dir)).expect("Failed to read lms dir") {
         if let Ok(path) = dir {
             if !path.is_dir() {
                 continue;
@@ -73,7 +73,7 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
     let correct_nodes = &correct_paths_json.as_array().unwrap()[0]
         .as_object()
         .unwrap();
-    for dir in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
+    for dir in glob(stru!(target_dir)).expect("Failed to read lms dir") {
         let local_path_current = dir.as_ref().unwrap().parent().unwrap().file_name().unwrap();
 
         // Get all chilled directories in lms [css, vars, svelte, ..etc]
@@ -94,7 +94,7 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
             }
 
             match ustring!(present_node_id.unwrap().as_str()) {
-                correct_path if !correct_path.eq(local_path_current.to_str().unwrap()) => {
+                correct_path if !correct_path.eq(stru!(local_path_current)) => {
                     let new_name: Vec<_> = correct_path.split("/").collect();
 
                     let local_path = lms_dir.join(local_path_current).join(&node_id);

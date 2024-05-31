@@ -6,7 +6,7 @@ use std::{
     process::exit,
 };
 
-use crate::{files, prompt, ustr_ustring, ustring};
+use crate::{error_exit, files, prompt, ustr_ustring, ustring};
 
 use super::SCAN_FILE_TYPE;
 
@@ -105,8 +105,7 @@ pub fn verify_logic() {
                     local_directory.to_str().unwrap(),
                     valid_directory.to_str().unwrap()
                 );
-                println!("Can't move folder because: {}", err);
-                exit(1);
+                error_exit!("Can't move folder because: {}", err);
             }
         }
     }
@@ -120,8 +119,7 @@ pub fn verify_logic() {
         if prompt::yes_no("\nDo you want to remove them") {
             for dir in &empty_dirs {
                 if let Err(err) = fs::remove_dir(dir) {
-                    eprintln!("Can't remove folder: {}", err);
-                    exit(1)
+                    error_exit!("Can't remove folder: {}", err);
                 }
             }
         }

@@ -1,4 +1,6 @@
-use crate::{arguments::setups, attempt::Attempt, io, settings::Settings, ustr_ustring, ustring};
+use crate::{
+    arguments::setups, attempt::Attempt, error_exit, io, settings::Settings, ustr_ustring, ustring,
+};
 use colored::*;
 use reqwest::{
     blocking::Client,
@@ -111,25 +113,10 @@ pub fn review(settings: &Settings) {
 
     let response = match res.as_ref().unwrap().status() {
         StatusCode::OK => res.unwrap(),
-
-        StatusCode::UNAUTHORIZED => {
-            eprintln!("Key is invalid");
-            exit(1)
-        }
-
-        StatusCode::NOT_FOUND => {
-            eprintln!("Route of endpoint not found: {}", &ai_endpoint);
-            exit(1)
-        }
-
-        StatusCode::SERVICE_UNAVAILABLE => {
-            eprintln!("AI api is unavailable");
-            exit(1)
-        }
-        _ => {
-            eprintln!("Response not handles: {}", res.unwrap().status());
-            exit(1)
-        }
+        StatusCode::UNAUTHORIZED => error_exit!("Key is invalid"),
+        StatusCode::NOT_FOUND => error_exit!("Route of endpoint not found: {}", &ai_endpoint),
+        StatusCode::SERVICE_UNAVAILABLE => error_exit!("AI api is unavailable"),
+        _ => error_exit!("Response not handles: {}", res.unwrap().status()),
     };
 
     let json_data = io::response_to_json(response);
@@ -178,29 +165,12 @@ fn pretty_diff_print(files: HashMap<PathBuf, Vec<String>>, ai_response: Response
         println!("-----------------------------");
         for recommendation in rec.content {
             match recommendation.type_reference.as_str() {
-                "error" => {
-                    println!("{}", "Error".red())
-                }
-
-                "warning" => {
-                    println!("{}", "Warning".yellow())
-                }
-
-                "spelling" => {
-                    println!("{}", "Spelling".blue())
-                }
-
-                "good_job" => {
-                    println!("{}", "Good Job".green())
-                }
-
-                "vulnerability" => {
-                    println!("{}", "Vulnerability".purple())
-                }
-
-                unknown_response => {
-                    println!("Unknown: {}", unknown_response)
-                }
+                "error" => println!("{}", "Error".red()),
+                "warning" => println!("{}", "Warning".yellow()),
+                "spelling" => println!("{}", "Spelling".blue()),
+                "good_job" => println!("{}", "Good Job".green()),
+                "vulnerability" => println!("{}", "Vulnerability".purple()),
+                unknown_response => println!("Unknown: {}", unknown_response),
             }
             println!("\n{}\n", recommendation.message.as_str().underline());
 

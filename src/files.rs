@@ -1,4 +1,4 @@
-use crate::{io, ustr_ustring, ustring};
+use crate::{error_exit, io, ustr_ustring, ustring};
 use glob::glob;
 use std::{
     collections::{HashMap, HashSet},
@@ -62,10 +62,7 @@ pub fn get_misplaced_nodes() -> HashMap<PathBuf, PathBuf> {
     let correct_paths_json =
         match io::request("GET", "/api/node-paths".to_string(), &"".to_string(), None) {
             Some(data) => io::response_to_json(data),
-            None => {
-                eprintln!("Cant convert paths to json");
-                exit(1)
-            }
+            None => error_exit!("Can't convert paths to json"),
         };
 
     let mut misplaced: HashMap<PathBuf, PathBuf> = HashMap::new();

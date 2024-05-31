@@ -42,3 +42,13 @@ macro_rules! ustr_ustring {
         ustring!($arg.unwrap().to_str())
     };
 }
+
+#[macro_export]
+macro_rules! error_exit {
+    ($($arg:tt)*) => {
+        {
+            eprintln!($($arg)*);
+            exit(1);
+        }
+    };
+}

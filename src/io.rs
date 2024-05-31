@@ -12,6 +12,8 @@ use std::{
     process::{exit, Command, Stdio},
 };
 
+use crate::error_exit;
+
 const SUPPORTED_ARCHITECTURES: [&str; 2] = ["x86_64", "aarch64"];
 
 // TODO: Implement tests for request
@@ -36,36 +38,21 @@ pub fn request(
             .header("authorization", token)
             .body(data.clone().unwrap())
             .send(),
-        _ => {
-            eprintln!("Invalid method: {}", method);
-            exit(1)
-        }
+        _ => error_exit!("Invalid method: {}", method),
     };
 
     match res {
         Ok(res) => match res.status() {
             StatusCode::OK => Some(res),
-
-            StatusCode::UNAUTHORIZED => {
-                eprintln!("You are not logged in");
-                exit(1)
-            }
-
-            StatusCode::FORBIDDEN => {
-                eprintln!("You don't have the right to access this");
-                exit(1)
-            }
-
+            StatusCode::UNAUTHORIZED => error_exit!("You are not logged in"),
+            StatusCode::FORBIDDEN => error_exit!("You don't have the right to access this"),
             StatusCode::IM_A_TEAPOT => {
                 println!("Updating client ...");
                 handle_upgrade();
                 println!("done");
-                exit(0)
+                exit(0);
             }
-            _ => {
-                eprintln!("Server status not handled: {:?}", res.status());
-                exit(1);
-            }
+            _ => error_exit!("Server status not handled {:?}", res.status()),
         },
         Err(_) => {
             println!("Request failed because the client is offline");
@@ -79,18 +66,13 @@ pub fn response_to_json(res: Response) -> Value {
     let text = res.text().unwrap();
     match serde_json::from_str(&text) {
         Ok(data) => data,
-        Err(err) => {
-            eprintln!("JSON parsing error: \n{}", err);
-            exit(1)
-        }
+        Err(err) => error_exit!("JSON parsing error: \n{}", err),
     }
 }
 
 pub fn is_installed(application: &str) -> bool {
     return execute_command("which", vec![application]);
 }
-
-
 
 // TODO: Implement tests for execute_command
 pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
@@ -132,15 +114,9 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
                 let _ = unwrap_res.copy_to(&mut res_body);
                 let _ = stdin.write(&res_body);
             }
-            None => {
-                eprintln!("Warning: Got no response from server");
-                exit(1)
-            }
+            None => error_exit!("Warning: Got no response from server"),
         },
-        None => {
-            eprintln!("Failed to get stdin");
-            exit(1)
-        }
+        None => error_exit!("Failed to get stdin"),
     }
 
     drop(tar_process)
@@ -159,26 +135,21 @@ pub fn handle_upgrade() {
 
     if !Path::exists(&lms_loc) {
         if let Err(err) = fs::create_dir_all(&lms_loc) {
-            eprintln!("A error occurred with creating: {}", err);
-            exit(1)
+            error_exit!("A error occurred with creating: {}", err);
         }
     }
 
     let architecture = std::env::consts::ARCH;
 
     if !SUPPORTED_ARCHITECTURES.contains(&architecture) {
-        eprintln!("{} processor is not supported", &architecture);
-        exit(1)
+        error_exit!("{} processor is not supported", &architecture);
     }
 
     // TODO: Check if macos is arm or intel
     let plat = match env::consts::OS {
         "linux" => "linux_x64",
         "macos" => "mac_arm64",
-        platform => {
-            eprintln!("Your platform is not supported - {}", platform);
-            exit(1)
-        }
+        platform => error_exit!("Your platform is not supported - {}", platform),
     };
 
     let mut response = reqwest::blocking::get(format!(
@@ -188,15 +159,13 @@ pub fn handle_upgrade() {
     .expect("request failed");
 
     if !response.status().is_success() {
-        eprintln!("Failed to download lms");
-        exit(1)
+        error_exit!("Failed to download lms");
     }
 
     if Path::exists(&lms_loc.join(exe_name)) {
         println!("Removing old version");
         if let Err(err) = fs::remove_file(&lms_loc.join(exe_name)) {
-            eprintln!("A error occurred with removing: {}", err);
-            exit(1)
+            error_exit!("A error occurred with removing: {}", err);
         }
     }
 

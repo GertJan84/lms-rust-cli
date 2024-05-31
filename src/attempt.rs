@@ -4,7 +4,7 @@ use std::{
     process::exit,
 };
 
-use crate::{files, io, settings::Settings};
+use crate::{error_exit, files, io, settings::Settings};
 
 pub struct Attempt {
     pub node_id: String,
@@ -14,12 +14,7 @@ pub struct Attempt {
 }
 
 impl Attempt {
-    pub fn new(
-        node_id: String,
-        module_id: String,
-        spec: String,
-        id: String,
-    ) -> Self {
+    pub fn new(node_id: String, module_id: String, spec: String, id: String) -> Self {
         Self {
             node_id,
             module_id,
@@ -99,10 +94,7 @@ impl Attempt {
         if Path::exists(&cache) {
             let cache_location = match fs::read_to_string(&cache) {
                 Ok(cache_content) => cache_content.to_string(),
-                Err(_) => {
-                    eprintln!("No cached assignment");
-                    exit(1)
-                }
+                Err(_) => error_exit!("No cached assignment"),
             };
 
             let mut content = cache_location.split_whitespace();
@@ -124,7 +116,6 @@ impl Attempt {
 
             let _ = fs::remove_file(&cache);
         }
-        eprintln!("No cache file");
-        exit(1)
+        error_exit!("No cache file")
     }
 }

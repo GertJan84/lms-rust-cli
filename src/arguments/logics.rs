@@ -3,7 +3,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings, ustring};
+use crate::{attempt::Attempt, files, io, prompt, settings::Settings, stru, ustring};
 
 use super::{
     download::download_template,
@@ -34,7 +34,7 @@ pub fn upload_logic(settings: &Settings) {
     if !Path::exists(&current_attempt.get_path_buf()) {
         eprintln!(
             "There is no folder: {}",
-            current_attempt.get_path_buf().to_str().unwrap()
+            stru!(current_attempt.get_path_buf())
         );
         return eprintln!("Try `lms template` first");
     }
@@ -110,14 +110,10 @@ pub fn upload_logic(settings: &Settings) {
                         }
                     }
                 }
-                None => {
-                    return eprintln!("Error getting transferred value");
-                }
+                None => return eprintln!("Error getting transferred value"),
             }
         }
-        None => {
-            return eprintln!("Failed to upload attempt");
-        }
+        None => return eprintln!("Failed to upload attempt"),
     }
 }
 

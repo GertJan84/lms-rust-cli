@@ -6,7 +6,7 @@ use std::{
     process::exit,
 };
 
-use crate::{files, prompt, ustr_ustring, ustring};
+use crate::{error_exit, files, prompt, stru, ustr_ustring, ustring};
 
 use super::SCAN_FILE_TYPE;
 
@@ -16,7 +16,7 @@ pub fn get_attempt_files_content(
 ) -> Option<HashMap<PathBuf, Vec<String>>> {
     let mut files_content: HashMap<PathBuf, Vec<String>> = HashMap::new();
 
-    for files in glob(project_folder.join("*").to_str().unwrap()).unwrap() {
+    for files in glob(stru!(project_folder.join("*"))).unwrap() {
         if let Ok(file) = files {
             if !file.is_file() {
                 continue;
@@ -24,7 +24,7 @@ pub fn get_attempt_files_content(
 
             match file.extension() {
                 Some(ext) => {
-                    if !SCAN_FILE_TYPE.contains(&ext.to_str().unwrap()) {
+                    if !SCAN_FILE_TYPE.contains(&stru!(ext)) {
                         continue;
                     }
                 }
@@ -100,13 +100,8 @@ pub fn verify_logic() {
             }
 
             if let Err(err) = fs::rename(local_directory, valid_directory) {
-                println!(
-                    "{} -> {}",
-                    local_directory.to_str().unwrap(),
-                    valid_directory.to_str().unwrap()
-                );
-                println!("Can't move folder because: {}", err);
-                exit(1);
+                println!("{} -> {}", stru!(local_directory), stru!(valid_directory));
+                error_exit!("Can't move folder because: {}", err);
             }
         }
     }
@@ -114,14 +109,13 @@ pub fn verify_logic() {
     if let Some(empty_dirs) = files::get_empty_lms() {
         println!("\nThe following folders are empty");
         for dir in &empty_dirs {
-            println!("  - {}", dir.to_str().unwrap());
+            println!("  - {}", stru!(dir));
         }
 
         if prompt::yes_no("\nDo you want to remove them") {
             for dir in &empty_dirs {
                 if let Err(err) = fs::remove_dir(dir) {
-                    eprintln!("Can't remove folder: {}", err);
-                    exit(1)
+                    error_exit!("Can't remove folder: {}", err);
                 }
             }
         }

@@ -16,9 +16,7 @@ pub fn grade_logic(settings: &Settings, arg: String) {
 
     let attempts = match response {
         Some(data) => io::response_to_json(data),
-        None => {
-            return eprintln!("No attempt found");
-        }
+        None => return eprintln!("No attempt found"),
     };
 
     let attempt = &attempts[0];

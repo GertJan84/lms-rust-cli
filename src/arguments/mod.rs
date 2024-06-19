@@ -3,10 +3,10 @@ pub mod grade;
 pub mod ide;
 pub mod logics;
 pub mod login;
+pub mod review;
 pub mod setups;
 pub mod show;
 pub mod toggle;
-pub mod review;
 
 use std::process::exit;
 
@@ -28,9 +28,7 @@ pub fn execute(command: &str, arg: String) {
         "show" => show::show(&settings, arg),
         "toggle" => toggle::toggle(&mut settings, arg),
         "review" => review::review(&settings),
-        _ => {
-            eprintln!("invalid command {}", command);
-        }
+        _ => eprintln!("invalid command {}", command),
     }
 
     exit(1)

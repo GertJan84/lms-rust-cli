@@ -15,9 +15,7 @@ pub fn show(settings: &Settings, arg: String) {
     match arg {
         "path" => show_path(settings),
         "settings" => show_settings(settings),
-        _ => {
-            eprintln!("invalid subcommand {}", arg);
-        }
+        _ => eprintln!("invalid subcommand {}", arg),
     }
 }
 

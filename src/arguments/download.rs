@@ -1,7 +1,7 @@
 use glob::glob;
-use std::{collections::HashSet, fs, path::Path, thread::sleep, time::Duration};
+use std::{collections::HashSet, fs, path::Path, process::exit, thread::sleep, time::Duration};
 
-use crate::{attempt::Attempt, files, io, settings::Settings, ustr_ustring, ustring};
+use crate::{attempt::Attempt, files, io, settings::Settings, stru, ustr_ustring, ustring};
 
 use super::DOWNLOAD_EXCLUDE;
 
@@ -10,20 +10,19 @@ pub fn download_logic(settings: &Settings, arg: String) {
 
     if !arg.eq("all") {
         let _ = download_attempt(&arg, &token);
+        exit(0) // stop downloading the rest of the assignments
     }
 
     let response = io::request("GET", "/api/node-paths".to_string(), &token, None);
     let attempts = match response {
         Some(data) => io::response_to_json(data),
-        None => {
-            return eprintln!("No attempt found");
-        }
+        None => return eprintln!("No attempt found"),
     };
 
     let mut local_dirs: HashSet<String> = HashSet::new();
     let target_dir = files::get_lms_dir().join("*/*");
 
-    for path in glob(target_dir.to_str().unwrap()).expect("Failed to read lms dir") {
+    for path in glob(stru!(target_dir)).expect("Failed to read lms dir") {
         match path {
             Ok(path) => {
                 local_dirs.insert(ustr_ustring!(path.as_path().file_name()));
@@ -76,10 +75,7 @@ pub fn download_attempt(assignment: &String, token: &String) -> bool {
                     out_dir.push(att.as_str().unwrap());
 
                     if Path::exists(&out_dir) {
-                        eprintln!(
-                            "Output directory {} already exists",
-                            out_dir.to_str().unwrap()
-                        );
+                        eprintln!("Output directory {} already exists", stru!(out_dir));
                         return false;
                     }
 
@@ -92,11 +88,7 @@ pub fn download_attempt(assignment: &String, token: &String) -> bool {
                         select_attempts.as_str().unwrap()
                     );
                     io::download_tgz(url, &token, &out_dir);
-                    println!(
-                        "Downloaded: {} at: {}",
-                        assignment,
-                        &out_dir.to_str().unwrap()
-                    );
+                    println!("Downloaded: {} at: {}", assignment, stru!(&out_dir));
                 }
                 None => return false,
             }
@@ -113,7 +105,7 @@ pub fn download_attempt(assignment: &String, token: &String) -> bool {
 pub fn download_template(token: &String, attempt: &Attempt) -> bool {
     if !Path::exists(&attempt.get_path_buf()) {
         let _ = fs::create_dir_all(&attempt.get_path_buf());
-        println!("Created {}", &attempt.get_path_buf().to_str().unwrap());
+        println!("Created {}", stru!(&attempt.get_path_buf()));
     } else {
         if !files::is_folder_empty(&attempt.get_path_buf()) {
             return false;

@@ -1,51 +1,60 @@
 # LMS Rust client
 
-This isn't the official client for LMS.
+This isn't the official client for LMS of the Saxion software development associad degree.
 
-[LMS](https://gitlab.com/saxion.nl/42/lms42)
+You can find the offical client [here](https://gitlab.com/saxionnl/42/lms42)
 
-### How to install
 
-Run this in terminal.
+## Installation
 
-```bash
-wget -qO- https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+Install the client with `wget`
+
+```sh
+  wget -qO- https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
 ```
-or
+or `curl`
+```sh
+  curl -sSL https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+```
+## Run Locally
 
-```bash
-curl -sSL https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+```
+LMS Command Line Interface
+
+Usage: lms <COMMAND>
+
+Commands:
+  login     Connect to your sd42.nl account
+  update    Upgrade lms
+  upload    Upload your work for the current assignment
+  open      Open the current assignment in the IDE
+  verify    Verify the integrity of your lms directory
+  template  Download the current assignment template
+  download  Download submitted attempts or all attempts
+  grade     Teachers only: download everything needed for grading
+  show      Show info from the client
+  toggle    Toggle settings true or false
+  review    Send code to ai to review
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
 ```
 
-### How to run
+## Running Tests
 
-Just use `lms` as usual
+To run tests, run the following command
 
-### Features
+```sh
+  cargo test
+```
 
-- [x] Upload work
-- [x] Download work
-- [x] Download template
-- [x] Reorder file structure
-- [x] Grade work
-- [x] Login
-- [x] Open work dir
-- [x] Handle setup
 
-### Extra features
+## Variables
 
-- [x] Change default editor
-- [x] Open work offline
-- [x] Download all assignments
-- [x] Check for todo's in your code before upload for "sql", "rs", "py", "js", "css", "html", "svelte"
-- [x] Add set command for config changes
-- [x] Add get command to verify config changes
-
-Available for `Aarch64` and `x86_64` systems
-
-### Settings example
-
-in ~/.config/lms.ini
+For this project the following variables are avarible in the `lms.ini` file located in the `~/.config` folder.
 
 ```ini
 [auth]
@@ -63,13 +72,8 @@ endpoint=https://api.openai.com/v1/chat/completions
 key=123
 
 [custom]
-editor=custom_script
+editor=helix
 ```
-
-### Setups options
-
-To update an setup use the toggle command with the subcommand you want to toggle.
-If the option is not in your `lms.ini` file it will be set to true automatically.
 
 `lms toggle <option>|<flag>` to toggle. The correct setup can be called by there full name or there flag.
 
@@ -79,3 +83,19 @@ Options|Flags:
 - `upload_open_browser` or `-B`: Opens an browser to the current assignment LMS webpage.
 - `check_todo` or `-T`: Checks if there are any todo's in the current files and will ask it.
 - `open_first_folder` or `-O`: Opens the first and only unhidden folder in the attempt (useful for opening Android Studio)
+
+## Contributing
+
+Contributions are always welcome!
+
+See `contributing.md` for ways to get started.
+
+Please adhere to this project's `code of conduct`.
+
+
+
+## Authors
+
+- [@GertJan](https://github.com/GertJan84) 
+- [@Tom](https://github.com/TomvanhetBolscher)
+- [@Stan](https://github.com/StandUp2001)

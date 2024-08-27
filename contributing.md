@@ -29,7 +29,7 @@ Now that you have Rust installed and the repository set up locally, you’re rea
 
 - **Create a new branch**: Always create a new branch for your changes to keep your `main` branch clean.
 ```sh
-git checkout -b your-feature-branch
+git switch -c your-feature-branch
 ```
 - Make your changes: Whether you're fixing a bug, adding a new feature, or improving the documentation, make your changes in your new branch.
 

@@ -4,17 +4,26 @@ use reqwest::{
     blocking::{Client, Response},
     StatusCode,
 };
-use serde_json::Value;
 use std::{
     env,
-    fs::{self, File},
     io::Cursor,
     os::unix::fs::PermissionsExt,
+    fs::{self, File},
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
-use tar::{Archive};
-use flate2::read::GzDecoder;
+use std::io::Write;
+use tar::{
+    Archive,
+    Builder
+};
+use flate2::{
+    read::GzDecoder,
+    write::GzEncoder,
+    Compression
+};
+use ignore::WalkBuilder;
+use serde_json::Value;
 
 use crate::error_exit;
 
@@ -90,7 +99,7 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
 }
 
 // TODO: Implement tests for download_tgz
-pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
+pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) {
     let res = request("GET", path, token, None);
 
     if res.is_none() {
@@ -109,6 +118,42 @@ pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     if let Err(err) = archive.unpack(out_dir) {
         error_exit!("{}", err);
     }
+}
+
+pub fn compress_folder(path: &PathBuf) -> Option<Vec<u8>> {
+    let encoder = GzEncoder::new(Vec::new(), Compression::default());
+    let mut tar  = Builder::new(encoder);
+
+    let walker = WalkBuilder::new(&path)
+        .standard_filters(false)
+        .hidden(true)
+        .ignore(true)
+        .git_ignore(true)
+        .git_exclude(true)
+        .git_global(true)
+        .add_custom_ignore_filename(".lmsignore")
+        .build();
+
+
+    for res in walker {
+        // TODO: Better error handle
+        let res = match res {
+            Ok(e) => e,
+            Err(_) => return None,
+        };
+
+        if res.path() == path {
+            continue
+        }
+
+        let rel_path = res.path().strip_prefix(&path).unwrap();
+
+        if let Err(err) = tar.append_path_with_name(&res.path(), &rel_path) {
+            error_exit!("{}", err)
+        }
+    }
+
+    return Some(tar.into_inner().unwrap().finish().unwrap())
 }
 
 // TODO: Implement tests for handle_upgrade

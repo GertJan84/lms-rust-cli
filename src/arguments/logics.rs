@@ -1,9 +1,8 @@
 use std::{
     path::Path,
-    process::{Command, Stdio},
 };
-
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings, stru, ustring};
+use std::process::exit;
+use crate::{attempt::Attempt, error_exit, files, io, prompt, settings::Settings, stru, ustring};
 
 use super::{
     download::download_template,
@@ -56,44 +55,26 @@ pub fn upload_logic(settings: &Settings) {
         }
     }
 
-    let cmd = if cfg!(target_os = "macos") {
-        "gtar"
-    } else {
-        "tar"
-    };
-
     if files::is_folder_empty(&current_attempt.get_path_buf()) {
         if !prompt::yes_no("This folder is currently empty are you sure you want to upload?") {
             return eprintln!("Cancelled upload");
         }
     }
 
-    let mut tar = Command::new(cmd);
-    tar.arg("czC")
-        .arg(ustring!(current_attempt.get_path_buf().to_str()))
-        .arg("--exclude-backups")
-        .arg("--exclude-ignore=.gitignore")
-        .arg("--exclude-ignore=.lmsignore")
-        .arg(".")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped());
-
-    let data = match tar.output() {
-        Ok(output) => output,
-        Err(_) => {
-            if cfg!(platform = "macos") {
-                return println!("Please install gnu-tar (using brew for instance)");
-            }
-            return eprintln!("Command not found: {}", cmd);
-        }
-    };
+    let data = io::compress_folder(&current_attempt.get_path_buf()); 
+    
+    
+    if data.is_none() {
+        error_exit!("Can't comporess folder: {}", &current_attempt.get_path_buf().to_str().unwrap())
+    } 
+    
 
     let url = format!(
         "/api/attempts/{}/submission",
         current_attempt.id.to_string()
     );
 
-    match io::request("POST", url, &settings.get_token(), Some(data.stdout)) {
+    match io::request("POST", url, &settings.get_token(), data) {
         Some(res) => {
             let json_res: serde_json::Value = io::response_to_json(res);
 

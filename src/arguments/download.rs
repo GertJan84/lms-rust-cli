@@ -1,6 +1,5 @@
 use glob::glob;
 use std::{collections::HashSet, fs, path::Path, process::exit, thread::sleep, time::Duration};
-
 use crate::{attempt::Attempt, files, io, settings::Settings, stru, ustr_ustring, ustring};
 
 use super::DOWNLOAD_EXCLUDE;

@@ -1,3 +1,5 @@
+extern crate tar;
+
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
@@ -11,6 +13,7 @@ use std::{
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
+use tar::{Builder, Archive};
 
 use crate::error_exit;
 

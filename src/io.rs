@@ -126,10 +126,10 @@ pub fn compress_folder(path: &PathBuf) -> Option<Vec<u8>> {
 
     let walker = WalkBuilder::new(&path)
         .standard_filters(false)
-        .hidden(true)
+        .hidden(false)
         .ignore(true)
         .git_ignore(true)
-        .git_exclude(true)
+        .git_exclude(false)
         .git_global(true)
         .add_custom_ignore_filename(".lmsignore")
         .build();

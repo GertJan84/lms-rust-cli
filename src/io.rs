@@ -8,12 +8,13 @@ use serde_json::Value;
 use std::{
     env,
     fs::{self, File},
-    io::Write,
+    io::Cursor,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
-use tar::{Builder, Archive};
+use tar::{Archive};
+use flate2::read::GzDecoder;
 
 use crate::error_exit;
 
@@ -92,37 +93,22 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
 pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
     let res = request("GET", path, token, None);
 
-    let cmd = if cfg!(target_os = "macos") {
-        "gtar"
-    } else {
-        "tar"
-    };
-
     if res.is_none() {
         return;
     }
 
-    let mut tar_process = Command::new(cmd)
-        .arg("xzC")
-        .arg(out_dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Failed to start tar process");
+    // TODO: Better error handeling
+    let mut packet = Cursor::new(res.unwrap().bytes().unwrap());
+    let files = GzDecoder::new(&mut packet);
+    let mut archive = Archive::new(files);
 
-    match tar_process.stdin.take() {
-        Some(mut stdin) => match res {
-            Some(mut unwrap_res) => {
-                let mut res_body = vec![];
-                let _ = unwrap_res.copy_to(&mut res_body);
-                let _ = stdin.write(&res_body);
-            }
-            None => error_exit!("Warning: Got no response from server"),
-        },
-        None => error_exit!("Failed to get stdin"),
+    if let Err(err) = fs::create_dir_all(out_dir) { 
+        error_exit!("{}", err);
     }
 
-    drop(tar_process)
+    if let Err(err) = archive.unpack(out_dir) {
+        error_exit!("{}", err);
+    }
 }
 
 // TODO: Implement tests for handle_upgrade

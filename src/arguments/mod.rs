@@ -17,6 +17,7 @@ const DOWNLOAD_EXCLUDE: [&str; 3] = ["exam", "project", "graduation"];
 pub fn execute(command: &str, arg: String) {
     let mut settings = crate::settings::Settings::new();
     match command {
+        "install" => logics::install_logic(),
         "open" => logics::open_logic(&settings),
         "grade" => grade::grade_logic(&settings, arg),
         "upload" => logics::upload_logic(&settings),

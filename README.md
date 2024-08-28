@@ -9,12 +9,12 @@ This isn't the official client for LMS.
 Run this in terminal.
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+wget -qO lms https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms && chmod +x lms && ./lms install
 ```
 or
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/GertJan84/lms-rust-cli/main/install | python
+curl -sSL -o lms https://github.com/gertjan84/lms-rust-cli/releases/latest/download/lms && chmod +x lms && ./lms install
 ```
 
 ### How to run

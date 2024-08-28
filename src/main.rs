@@ -26,6 +26,10 @@ fn main() {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(
+            Command::new("install")
+                .about("Install lms")
+        )
+        .subcommand(
             Command::new("login")
                 .about("Connect to your sd42.nl account")
             )
@@ -90,6 +94,7 @@ fn main() {
             // create subcommand matching for a sub_cmd (a string like 'login')
             subcommands!(
                 sub_cmd,
+                install,
                 login,
                 update,
                 upload,

@@ -1,9 +1,6 @@
-use std::{
-    path::Path,
-    process::{Command, Stdio},
-};
-
-use crate::{attempt::Attempt, files, io, prompt, settings::Settings, stru, ustring};
+use std::{env, fs, path::Path, process::{Command, Stdio, exit}};
+use std::path::PathBuf;
+use crate::{attempt::Attempt, error_exit, files, io, prompt, settings::Settings, stru, ustring};
 
 use super::{
     download::download_template,
@@ -127,5 +124,51 @@ pub fn template_logic(settings: &Settings) {
         );
 
         return eprintln!("{}", error_message);
+    }
+}
+
+pub fn install_logic() {
+    let mut lms_loc = PathBuf::new();
+    lms_loc.push(env::var("HOME").unwrap());
+    lms_loc.push(".local");
+    lms_loc.push("bin");
+
+    let download_location = env::current_exe().unwrap();
+    let lms_loc_str = lms_loc.to_str().unwrap();
+
+    if download_location != lms_loc {
+        println!("Move lms to recommended folder {}", lms_loc_str);
+        if let Err(err) = fs::rename(download_location.to_str().unwrap(), lms_loc.join("lms").to_str().unwrap()) {
+            error_exit!("{}", err)
+        }
+    }
+
+    if let  Some(path) = env::var_os("PATH") {
+       if path.to_string_lossy().contains(&lms_loc_str) {
+           return println!("Install complete")
+       }
+
+        println!("This system doesn't have {} in its PATH.", lms_loc_str);
+        println!("  Add this before running lms");
+
+        if let Some(shell) = env::var_os("SHELL") {
+            println!("Execute this command to add lms to your path");
+            match shell.to_string_lossy().split('/').last() {
+                Some("zsh") => {
+                    println!("echo path += '{}' >> ~/.zshrc", lms_loc_str);
+                    println!("echo EXPORT PATH >> ~/.zshrc");
+                }
+                Some("bash") => {
+                    println!(r"echo PATH={}:\$PATH >> ~/.bashrc", lms_loc_str);
+                }
+                _ => {
+                    eprintln!("You need to add {} to your shell", lms_loc_str);
+                }
+            }
+        } else {
+            eprintln!("SHELL environment variable is not set.");
+        }
+    } else {
+        eprintln!("PATH environment variable is not set.");
     }
 }

@@ -1,16 +1,29 @@
+extern crate tar;
+
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
 };
-use serde_json::Value;
 use std::{
     env,
-    fs::{self, File},
-    io::Write,
+    io::Cursor,
     os::unix::fs::PermissionsExt,
+    fs::{self, File},
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
+use std::io::Write;
+use tar::{
+    Archive,
+    Builder
+};
+use flate2::{
+    read::GzDecoder,
+    write::GzEncoder,
+    Compression
+};
+use ignore::WalkBuilder;
+use serde_json::Value;
 
 use crate::error_exit;
 
@@ -86,40 +99,61 @@ pub fn execute_command(application: &str, args: Vec<&str>) -> bool {
 }
 
 // TODO: Implement tests for download_tgz
-pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) -> () {
+pub fn download_tgz(path: String, token: &String, out_dir: &PathBuf) {
     let res = request("GET", path, token, None);
-
-    let cmd = if cfg!(target_os = "macos") {
-        "gtar"
-    } else {
-        "tar"
-    };
 
     if res.is_none() {
         return;
     }
 
-    let mut tar_process = Command::new(cmd)
-        .arg("xzC")
-        .arg(out_dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Failed to start tar process");
+    // TODO: Better error handeling
+    let mut packet = Cursor::new(res.unwrap().bytes().unwrap());
+    let files = GzDecoder::new(&mut packet);
+    let mut archive = Archive::new(files);
 
-    match tar_process.stdin.take() {
-        Some(mut stdin) => match res {
-            Some(mut unwrap_res) => {
-                let mut res_body = vec![];
-                let _ = unwrap_res.copy_to(&mut res_body);
-                let _ = stdin.write(&res_body);
-            }
-            None => error_exit!("Warning: Got no response from server"),
-        },
-        None => error_exit!("Failed to get stdin"),
+    if let Err(err) = fs::create_dir_all(out_dir) { 
+        error_exit!("{}", err);
     }
 
-    drop(tar_process)
+    if let Err(err) = archive.unpack(out_dir) {
+        error_exit!("{}", err);
+    }
+}
+
+pub fn compress_folder(path: &PathBuf) -> Option<Vec<u8>> {
+    let encoder = GzEncoder::new(Vec::new(), Compression::default());
+    let mut tar  = Builder::new(encoder);
+
+    let walker = WalkBuilder::new(&path)
+        .standard_filters(false)
+        .hidden(false)
+        .ignore(true)
+        .git_ignore(true)
+        .git_exclude(false)
+        .git_global(true)
+        .add_custom_ignore_filename(".lmsignore")
+        .build();
+
+
+    for res in walker {
+        let res = match res {
+            Ok(e) => e,
+            Err(_) => return None,
+        };
+
+        if res.path() == path {
+            continue
+        }
+        
+        if let Ok(rel_path) = res.path().strip_prefix(&path) {
+            if let Err(err) = tar.append_path_with_name(&res.path(), &rel_path) {
+                error_exit!("{}", err)
+            }
+        }
+
+    }
+    
+    return Some(tar.into_inner().unwrap().finish().unwrap())
 }
 
 // TODO: Implement tests for handle_upgrade

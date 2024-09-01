@@ -5,40 +5,55 @@ use std::{
     path::{Path, PathBuf},
     process::exit,
 };
+use ignore::WalkBuilder;
 
 use crate::{error_exit, files, prompt, stru, ustr_ustring, ustring};
 
 use super::SCAN_FILE_TYPE;
 
-// TODO: Move function to different location
 pub fn get_attempt_files_content(
     project_folder: &PathBuf,
 ) -> Option<HashMap<PathBuf, Vec<String>>> {
     let mut files_content: HashMap<PathBuf, Vec<String>> = HashMap::new();
+    
+    let walker = WalkBuilder::new(project_folder)
+        .standard_filters(false)
+        .hidden(false)
+        .ignore(true)
+        .git_ignore(true)
+        .git_exclude(false)
+        .git_global(true)
+        .add_custom_ignore_filename(".lmsignore")
+        .build(); 
 
-    for files in glob(stru!(project_folder.join("*"))).unwrap() {
-        if let Ok(file) = files {
-            if !file.is_file() {
-                continue;
-            }
-
-            match file.extension() {
-                Some(ext) => {
-                    if !SCAN_FILE_TYPE.contains(&stru!(ext)) {
-                        continue;
-                    }
-                }
-                None => continue,
-            }
-
-            let lines: Vec<String> = fs::read_to_string(&file)
-                .unwrap()
-                .lines()
-                .map(String::from)
-                .collect();
-
-            files_content.insert(file, lines);
+    for entry in walker {
+        let res = match entry {
+            Ok(res) => res,
+            Err(_) => continue,
+        };
+        
+        let file = res.path();
+        
+        if !file.is_file() {
+            continue;
         }
+
+        match file.extension() {
+            Some(ext) => {
+                if !SCAN_FILE_TYPE.contains(&stru!(ext)) {
+                    continue;
+                }
+            }
+            None => continue,
+        }
+
+        let lines: Vec<String> = fs::read_to_string(&file)
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect();
+
+            files_content.insert(file.to_path_buf(), lines);
     }
 
     if !files_content.is_empty() {

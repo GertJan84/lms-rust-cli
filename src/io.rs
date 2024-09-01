@@ -136,7 +136,6 @@ pub fn compress_folder(path: &PathBuf) -> Option<Vec<u8>> {
 
 
     for res in walker {
-        // TODO: Better error handle
         let res = match res {
             Ok(e) => e,
             Err(_) => return None,
@@ -145,14 +144,15 @@ pub fn compress_folder(path: &PathBuf) -> Option<Vec<u8>> {
         if res.path() == path {
             continue
         }
-
-        let rel_path = res.path().strip_prefix(&path).unwrap();
-
-        if let Err(err) = tar.append_path_with_name(&res.path(), &rel_path) {
-            error_exit!("{}", err)
+        
+        if let Ok(rel_path) = res.path().strip_prefix(&path) {
+            if let Err(err) = tar.append_path_with_name(&res.path(), &rel_path) {
+                error_exit!("{}", err)
+            }
         }
-    }
 
+    }
+    
     return Some(tar.into_inner().unwrap().finish().unwrap())
 }
 
